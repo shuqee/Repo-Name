@@ -1,0 +1,31 @@
+--cpu Cortex-M3
+"shuqee_motor\stm32f1xx_hal_gpio_ex.o"
+"shuqee_motor\stm32f1xx_hal_flash_ex.o"
+"shuqee_motor\stm32f1xx_hal_tim.o"
+"shuqee_motor\stm32f1xx_hal_iwdg.o"
+"shuqee_motor\stm32f1xx_hal.o"
+"shuqee_motor\stm32f1xx_hal_adc_ex.o"
+"shuqee_motor\stm32f1xx_hal_tim_ex.o"
+"shuqee_motor\stm32f1xx_hal_uart.o"
+"shuqee_motor\stm32f1xx_hal_cortex.o"
+"shuqee_motor\stm32f1xx_hal_pwr.o"
+"shuqee_motor\stm32f1xx_hal_dma.o"
+"shuqee_motor\stm32f1xx_hal_adc.o"
+"shuqee_motor\stm32f1xx_hal_gpio.o"
+"shuqee_motor\stm32f1xx_hal_flash.o"
+"shuqee_motor\stm32f1xx_hal_rcc_ex.o"
+"shuqee_motor\stm32f1xx_hal_rcc.o"
+"shuqee_motor\system_stm32f1xx.o"
+"shuqee_motor\stm32f1xx_hal_msp.o"
+"shuqee_motor\main.o"
+"shuqee_motor\stm32f1xx_it.o"
+"shuqee_motor\user_flash.o"
+"shuqee_motor\user_io.o"
+"shuqee_motor\user_time.o"
+"shuqee_motor\user_uart.o"
+"shuqee_motor\startup_stm32f103xe.o"
+--library_type=microlib --strict --scatter "shuqee_motor\shuqee_motor.sct"
+
+--diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "shuqee_motor.map" -o shuqee_motor\shuqee_motor.axf
