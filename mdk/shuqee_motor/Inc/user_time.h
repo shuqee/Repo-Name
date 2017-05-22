@@ -8,6 +8,7 @@ extern void user_time_init(void);
 extern void delay_ns(uint32_t times);
 extern void delay_us(uint32_t times);
 extern void delay_ms(uint32_t times);
+extern unsigned char speed_mode;
 #ifdef ENV_RESET
 extern void set_pul(enum motion_num index, GPIO_PinState dir, uint16_t interval, uint32_t conut);
 #endif

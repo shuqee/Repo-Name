@@ -1,6 +1,8 @@
 #include "stm32f1xx_hal.h"
 #include "user_config.h"
 #include "user_time.h"
+#include "user_io.h"
+#include "user_uart.h"
 
 void user_time_init(void)
 {
@@ -106,24 +108,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	enum motion_num index;
 	int now;
 	int set;
+#ifdef ENV_FLASH_LED
+	static int len_count0 = 0;
+	static int len_count1 = 0;
+	static int len_count2 = 0;
+#endif
 	static uint32_t interval = 999;
 	
 	if (htim->Instance == TIM1)
 	{
 		index = MOTION1;
+		SAFE(now = user_get_adc_height1());
 	}
 	else if (htim->Instance == TIM2)
 	{
 		index = MOTION2;
+		SAFE(now = user_get_adc_height2());
 	}
 	else if (htim->Instance == TIM3)
 	{
 		index = MOTION3;
+		SAFE(now = user_get_adc_height3());
 	}
 	else
+		
 	{
 		return;
 	}
+#ifndef ENV_FLASH_LED
 	SAFE(now = motion[index].high.now);
 	set = motion[index].high.set;
 	if (now == set)
@@ -139,4 +151,52 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
 	__HAL_TIM_SET_AUTORELOAD(htim, interval);
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));
+#else  
+	
+	set = motion[index].high.set;
+	if(now==set)
+	{
+			interval=999;
+		  __HAL_TIM_SET_AUTORELOAD(htim, interval);
+	}
+	if(now<set)
+		  interval=(ENV_ACCER)/(set-now);
+	 else
+		  interval =  (ENV_ACCER)/(now-set);
+	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
+	__HAL_TIM_SET_AUTORELOAD(htim, interval);
+	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));	    
+/*the fllower is the test led*/
+	if (htim->Instance == TIM1)
+	{
+		SAFE(__HAL_TIM_SET_AUTORELOAD(htim, frame.buff[2]*100+ENV_SPEED_MAX));
+		len_count0++;
+		if ((len_count0%speed_mode) == 0)
+			LED_SEAT1_TOGGLE();  
+	}
+	else if (htim->Instance == TIM2)
+	{		
+		SAFE(now = user_get_adc_height2());
+		set = motion[index].high.set;
+
+		SAFE(__HAL_TIM_SET_AUTORELOAD(htim, frame.buff[3]*100+ENV_SPEED_MAX));
+		len_count1++;
+		if ((len_count1%speed_mode) == 0)
+			LED_SEAT2_TOGGLE();
+	}
+	else if (htim->Instance == TIM3)
+	{	
+		SAFE(now = user_get_adc_height3());
+		set = motion[index].high.set;
+
+		SAFE(__HAL_TIM_SET_AUTORELOAD(htim, frame.buff[4]*100+ENV_SPEED_MAX));
+		len_count2++;
+		if ((len_count2%speed_mode) == 0)
+			LED_SEAT3_TOGGLE();		
+	}
+	else
+	{
+		return;
+	}
+#endif
 }

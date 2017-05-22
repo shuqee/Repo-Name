@@ -7,9 +7,11 @@
 /* #define DEBUG_ENV */
 
 /* three degrees of freedom platform  */
-#define ENV_3DOF
+/* #define ENV_3DOF */
 /* two degrees of freedom platform  */
 /* #define ENV_2DOF */
+
+#define ENV_AIR
 
 #ifdef ENV_3DOF
     /* without sensor */
@@ -35,6 +37,25 @@
 #ifdef ENV_2DOF
     /* need to reset the platform */
 	#define ENV_RESET
+	#define MOTION1_CONFIG_DIR	GPIO_PIN_SET
+	#define MOTION2_CONFIG_DIR	GPIO_PIN_RESET
+	#define MOTION3_CONFIG_DIR	GPIO_PIN_RESET
+	#define MOTION1_CONFIG_ORIGIN	0
+	#define MOTION2_CONFIG_ORIGIN	0
+	#define MOTION3_CONFIG_ORIGIN	0
+	#define MOTION1_CONFIG_ADJ		0
+	#define MOTION2_CONFIG_ADJ		0
+	#define MOTION3_CONFIG_ADJ		0
+	/* the environment variable of motion-space*/
+	#define ENV_SPACE 25
+	/* the reload value of timer when speed is in max */
+	#define ENV_SPEED_MAX 37
+	#define ENV_ACCER     (ENV_SPACE * (uint32_t)255 * (uint32_t)20)
+#endif
+
+#ifdef ENV_AIR
+	#define ENV_FLASH_LED
+    /* need to reset the platform */
 	#define MOTION1_CONFIG_DIR	GPIO_PIN_SET
 	#define MOTION2_CONFIG_DIR	GPIO_PIN_RESET
 	#define MOTION3_CONFIG_DIR	GPIO_PIN_RESET

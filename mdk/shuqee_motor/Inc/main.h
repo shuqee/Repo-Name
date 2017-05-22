@@ -41,9 +41,9 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define OUTPUT_SP1_Pin GPIO_PIN_2
+#define OUTPUT_SP1_Pin GPIO_PIN_3     //the pin is different from the actually;
 #define OUTPUT_SP1_GPIO_Port GPIOE
-#define OUTPUT_SP2_Pin GPIO_PIN_3
+#define OUTPUT_SP2_Pin GPIO_PIN_2
 #define OUTPUT_SP2_GPIO_Port GPIOE
 #define OUTPUT_SEATLED4_Pin GPIO_PIN_4
 #define OUTPUT_SEATLED4_GPIO_Port GPIOE
@@ -67,8 +67,8 @@
 #define ADC_SEAT1_GPIO_Port GPIOA
 #define ADC_SEAT2_Pin GPIO_PIN_1
 #define ADC_SEAT2_GPIO_Port GPIOA
-#define OUTPUT_PUL1_Pin GPIO_PIN_2
-#define OUTPUT_PUL1_GPIO_Port GPIOA
+#define OUTPUT_PUL1_Pin GPIO_PIN_2///////
+#define OUTPUT_PUL1_GPIO_Port GPIOA///////
 #define ADC_SEAT3_Pin GPIO_PIN_3
 #define ADC_SEAT3_GPIO_Port GPIOA
 #define ADC_SEAT4_Pin GPIO_PIN_4
@@ -83,8 +83,8 @@
 #define EXTI_UPLIMIT3_GPIO_Port GPIOC
 #define EXTI_DOWNLIMIT3_Pin GPIO_PIN_5
 #define EXTI_DOWNLIMIT3_GPIO_Port GPIOC
-#define OUTPUT_PUL2_Pin GPIO_PIN_0
-#define OUTPUT_PUL2_GPIO_Port GPIOB
+#define OUTPUT_PUL2_Pin GPIO_PIN_0/////////
+#define OUTPUT_PUL2_GPIO_Port GPIOB///////
 #define OUTPUT_LED0_Pin GPIO_PIN_1
 #define OUTPUT_LED0_GPIO_Port GPIOB
 #define INPUT_SPEED1_Pin GPIO_PIN_10
@@ -125,12 +125,12 @@
 #define OUTPUT_CLR2_GPIO_Port GPIOA
 #define OUTPUT_CLR1_Pin GPIO_PIN_10
 #define OUTPUT_CLR1_GPIO_Port GPIOC
-#define OUTPUT_DIR3_Pin GPIO_PIN_11
-#define OUTPUT_DIR3_GPIO_Port GPIOC
-#define OUTPUT_DIR2_Pin GPIO_PIN_12
-#define OUTPUT_DIR2_GPIO_Port GPIOC
-#define OUTPUT_DIR1_Pin GPIO_PIN_0
-#define OUTPUT_DIR1_GPIO_Port GPIOD
+#define OUTPUT_DIR3_Pin GPIO_PIN_11/////
+#define OUTPUT_DIR3_GPIO_Port GPIOC/////
+#define OUTPUT_DIR2_Pin GPIO_PIN_12/////
+#define OUTPUT_DIR2_GPIO_Port GPIOC/////
+#define OUTPUT_DIR1_Pin GPIO_PIN_0/////
+#define OUTPUT_DIR1_GPIO_Port GPIOD/////
 #define OUTPUT_CLR3_Pin GPIO_PIN_1
 #define OUTPUT_CLR3_GPIO_Port GPIOD
 #define OUTPUT_NUP3_Pin GPIO_PIN_2
@@ -155,8 +155,8 @@
 #define OUTPUT_SP5_GPIO_Port GPIOB
 #define OUTPUT_SP4_Pin GPIO_PIN_7
 #define OUTPUT_SP4_GPIO_Port GPIOB
-#define OUTPUT_PUL3_Pin GPIO_PIN_8
-#define OUTPUT_PUL3_GPIO_Port GPIOB
+#define OUTPUT_PUL3_Pin GPIO_PIN_8////////
+#define OUTPUT_PUL3_GPIO_Port GPIOB///////
 #define OUTPUT_SP3_Pin GPIO_PIN_9
 #define OUTPUT_SP3_GPIO_Port GPIOB
 

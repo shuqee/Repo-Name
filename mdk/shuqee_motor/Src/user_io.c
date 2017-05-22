@@ -29,6 +29,8 @@ extern DMA_HandleTypeDef hdma_adc1;
 void user_io_init(void)
 {
 	/* close the special-effects */
+	HAL_GPIO_WritePin(OUTPUT_SP1_GPIO_Port, OUTPUT_SP1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(OUTPUT_SP2_GPIO_Port, OUTPUT_SP2_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_SP3_GPIO_Port, OUTPUT_SP3_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_SP4_GPIO_Port, OUTPUT_SP4_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_SP5_GPIO_Port, OUTPUT_SP5_Pin, GPIO_PIN_SET);
@@ -112,7 +114,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		if(delay_count[i])
 			seat_num_tmp++;
 	}
-	
+
+#ifndef ENV_FLASH_LED
 	if(delay_count[0])
 		LED_SEAT1(1);
 	else
@@ -132,6 +135,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		LED_SEAT4(1);
 	else
 		LED_SEAT4(0);
+#endif
 	
 	status.seat_num = seat_num_tmp;
 }
@@ -179,7 +183,7 @@ void up_limit(enum motion_num index)
 		motion[index].high.now = (255+motion[index].config.adj) * ENV_SPACE;
 }
 #endif
-
+//extern unsigned char speed_mode;
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin)

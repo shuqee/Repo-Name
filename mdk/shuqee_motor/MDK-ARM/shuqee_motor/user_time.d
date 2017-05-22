@@ -32,3 +32,5 @@ shuqee_motor\user_time.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_
 shuqee_motor\user_time.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 shuqee_motor\user_time.o: ../Inc/user_config.h
 shuqee_motor\user_time.o: ../Inc/user_time.h
+shuqee_motor\user_time.o: ../Inc/user_io.h
+shuqee_motor\user_time.o: ../Inc/user_uart.h

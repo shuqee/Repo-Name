@@ -59,6 +59,7 @@ UART_HandleTypeDef huart1;
 struct motion_status motion[MOTION_COUNT] = {MOTION1};
 struct status status = {0};
 int flag_rst = 0;	//reset flag
+unsigned char speed_mode=10;//the default date;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -377,7 +378,7 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-  	led_count = 0;
+  led_count = 0;
 	send_seat = 0;
 	send_index = 0;
 	  
@@ -397,6 +398,12 @@ int main(void)
 		SAFE(update = frame.enable);
 		SAFE(free_ndown());
 		SAFE(free_nup());
+		
+			  if(GET_SPEED_ADJUST_MODE1()==0) speed_mode=30;
+        if(GET_SPEED_ADJUST_MODE2()==0) speed_mode=50;
+				if(GET_SPEED_ADJUST_MODE3()==0) speed_mode=70;
+				if(GET_SPEED_ADJUST_MODE4()==0) speed_mode=90;	
+	
 		if (update)
 		{
 			SAFE(frame.enable = 0);
@@ -417,6 +424,7 @@ int main(void)
 				SAFE(motion[MOTION3].high.set = frame.buff[2] * ENV_SPACE);
 				/* update the special effects */
 				SAFE(status.spb = frame.buff[5]);
+
 			}
 			/* update the seat number begin */
 			status.id = 0;
@@ -443,6 +451,8 @@ int main(void)
 				send_seat = 1;
 				send_buf[2] = status.id;
 				SAFE(send_buf[3] = status.seat_num);
+				
+				
 			}
 			/* SEAT_END */
 		}
@@ -480,6 +490,8 @@ int main(void)
 			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
 		}
 		/* update the special effects into io */
+		SPB1(status.spb&(1<<0));
+		SPB2(status.spb&(1<<1));
 		SPB3(status.spb&(1<<2));
 		SPB4(status.spb&(1<<3));
 		SPB5(status.spb&(1<<4));
@@ -496,8 +508,12 @@ int main(void)
 	}
   }
   /* USER CODE END 3 */
+ /* to judge the speed */
 
+	
 }
+
+
 
 /** System Clock Configuration
 */
@@ -919,6 +935,9 @@ static void MX_GPIO_Init(void)
 
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+//  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+//  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 

@@ -1,10 +1,17 @@
 #ifndef __USER_IO_H
 #define __USER_IO_H
 
+#include "stm32f1xx_hal.h"
+
 #define LED_SEAT1(x) HAL_GPIO_WritePin(OUTPUT_SEATLED1_GPIO_Port, OUTPUT_SEATLED1_Pin, (GPIO_PinState)(!(x)))
 #define LED_SEAT2(x) HAL_GPIO_WritePin(OUTPUT_SEATLED2_GPIO_Port, OUTPUT_SEATLED2_Pin, (GPIO_PinState)(!(x)))
 #define LED_SEAT3(x) HAL_GPIO_WritePin(OUTPUT_SEATLED3_GPIO_Port, OUTPUT_SEATLED3_Pin, (GPIO_PinState)(!(x)))
 #define LED_SEAT4(x) HAL_GPIO_WritePin(OUTPUT_SEATLED4_GPIO_Port, OUTPUT_SEATLED4_Pin, (GPIO_PinState)(!(x)))
+
+#define LED_SEAT1_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED1_GPIO_Port, OUTPUT_SEATLED1_Pin)
+#define LED_SEAT2_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED2_GPIO_Port, OUTPUT_SEATLED2_Pin)
+#define LED_SEAT3_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED3_GPIO_Port, OUTPUT_SEATLED3_Pin)
+#define LED_SEAT4_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED4_GPIO_Port, OUTPUT_SEATLED4_Pin)
 
 #define LED(x) do{ \
 	HAL_GPIO_WritePin(OUTPUT_LED0_GPIO_Port, OUTPUT_LED0_Pin, (GPIO_PinState)(!(x))); \
@@ -16,6 +23,8 @@
 	HAL_GPIO_TogglePin(OUTPUT_LED1_GPIO_Port, OUTPUT_LED1_Pin); \
 }while(0)
 
+#define SPB1(x) HAL_GPIO_WritePin(OUTPUT_SP1_GPIO_Port, OUTPUT_SP1_Pin, (GPIO_PinState)(!(x)))
+#define SPB2(x) HAL_GPIO_WritePin(OUTPUT_SP2_GPIO_Port, OUTPUT_SP2_Pin, (GPIO_PinState)(!(x)))
 #define SPB3(x) HAL_GPIO_WritePin(OUTPUT_SP3_GPIO_Port, OUTPUT_SP3_Pin, (GPIO_PinState)(!(x)))
 #define SPB4(x) HAL_GPIO_WritePin(OUTPUT_SP4_GPIO_Port, OUTPUT_SP4_Pin, (GPIO_PinState)(!(x)))
 #define SPB5(x) HAL_GPIO_WritePin(OUTPUT_SP5_GPIO_Port, OUTPUT_SP5_Pin, (GPIO_PinState)(!(x)))
@@ -41,7 +50,18 @@
 #define GET_UPLIMIT3() (!HAL_GPIO_ReadPin(EXTI_UPLIMIT3_GPIO_Port, EXTI_UPLIMIT3_Pin))
 #define GET_DOWNLIMIT3() (!HAL_GPIO_ReadPin(EXTI_DOWNLIMIT3_GPIO_Port, EXTI_DOWNLIMIT3_Pin))
 
+/*the new add begin*/
+#define GET_SPEED_ADJUST_MODE1() (!HAL_GPIO_ReadPin(INPUT_SPEED1_GPIO_Port, INPUT_SPEED1_Pin))
+#define GET_SPEED_ADJUST_MODE2() (!HAL_GPIO_ReadPin(INPUT_SPEED2_GPIO_Port, INPUT_SPEED2_Pin))
+#define GET_SPEED_ADJUST_MODE3() (!HAL_GPIO_ReadPin(INPUT_SPEED3_GPIO_Port, INPUT_SPEED3_Pin))
+#define GET_SPEED_ADJUST_MODE4() (!HAL_GPIO_ReadPin(INPUT_SPEED4_GPIO_Port, INPUT_SPEED4_Pin))
+
+
+/*the new add end*/
 
 extern void user_io_init(void);
+extern uint16_t user_get_adc_height1(void);
+extern uint16_t user_get_adc_height2(void);
+extern uint16_t user_get_adc_height3(void);
 
 #endif /* __USER_IO_H */
