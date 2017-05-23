@@ -119,16 +119,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		index = MOTION1;
 		SAFE(now = user_get_adc_height1());
+		printf("the adc_height1=%d\n",now);
 	}
 	else if (htim->Instance == TIM2)
 	{
 		index = MOTION2;
 		SAFE(now = user_get_adc_height2());
+		printf("the adc_height2=%d\n",now);
 	}
 	else if (htim->Instance == TIM3)
 	{
 		index = MOTION3;
 		SAFE(now = user_get_adc_height3());
+		printf("the adc_height3=%d\n",now);
 	}
 	else
 		
