@@ -118,20 +118,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance == TIM1)
 	{
 		index = MOTION1;
-		SAFE(now = user_get_adc_height1());
-		printf("the adc_height1=%d\n",now);
 	}
 	else if (htim->Instance == TIM2)
 	{
 		index = MOTION2;
-		SAFE(now = user_get_adc_height2());
-		printf("the adc_height2=%d\n",now);
 	}
 	else if (htim->Instance == TIM3)
 	{
 		index = MOTION3;
-		SAFE(now = user_get_adc_height3());
-		printf("the adc_height3=%d\n",now);
 	}
 	else
 		
@@ -155,47 +149,44 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	__HAL_TIM_SET_AUTORELOAD(htim, interval);
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));
 #else  
-	
+	SAFE(now = motion[index].high.now);
 	set = motion[index].high.set;
 	if(now==set)
 	{
 			interval=999;
 		  __HAL_TIM_SET_AUTORELOAD(htim, interval);
+		return;
+ 
 	}
 	if(now<set)
-		  interval=(ENV_ACCER)/(set-now);
+	{
+		interval=(ENV_ACCER)/(set-now);       	
+	}
 	 else
-		  interval =  (ENV_ACCER)/(now-set);
+	 {	  
+		 interval =  (ENV_ACCER)/(now-set);
+	 }
 	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
-	__HAL_TIM_SET_AUTORELOAD(htim, interval);
+	__HAL_TIM_SET_AUTORELOAD(htim, interval*200+ENV_SPEED_MAX);
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));	    
 /*the fllower is the test led*/
 	if (htim->Instance == TIM1)
-	{
-		SAFE(__HAL_TIM_SET_AUTORELOAD(htim, frame.buff[2]*100+ENV_SPEED_MAX));
+	{		
 		len_count0++;
 		if ((len_count0%speed_mode) == 0)
 			LED_SEAT1_TOGGLE();  
 	}
 	else if (htim->Instance == TIM2)
-	{		
-		SAFE(now = user_get_adc_height2());
-		set = motion[index].high.set;
-
-		SAFE(__HAL_TIM_SET_AUTORELOAD(htim, frame.buff[3]*100+ENV_SPEED_MAX));
+	{			
 		len_count1++;
 		if ((len_count1%speed_mode) == 0)
 			LED_SEAT2_TOGGLE();
 	}
 	else if (htim->Instance == TIM3)
 	{	
-		SAFE(now = user_get_adc_height3());
-		set = motion[index].high.set;
-
-		SAFE(__HAL_TIM_SET_AUTORELOAD(htim, frame.buff[4]*100+ENV_SPEED_MAX));
 		len_count2++;
 		if ((len_count2%speed_mode) == 0)
-			LED_SEAT3_TOGGLE();		
+		LED_SEAT3_TOGGLE();		
 	}
 	else
 	{

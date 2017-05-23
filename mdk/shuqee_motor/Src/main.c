@@ -389,7 +389,7 @@ int main(void)
 	HAL_IWDG_Start(&hiwdg);
 	  
 	init_flag = 1;
-	  
+  
 	while (init_flag != 0)
 	{
 		HAL_IWDG_Refresh(&hiwdg);
@@ -402,7 +402,9 @@ int main(void)
 			  if(GET_SPEED_ADJUST_MODE1()==0) speed_mode=30;
         if(GET_SPEED_ADJUST_MODE2()==0) speed_mode=50;
 				if(GET_SPEED_ADJUST_MODE3()==0) speed_mode=70;
-				if(GET_SPEED_ADJUST_MODE4()==0) speed_mode=90;	
+				if(GET_SPEED_ADJUST_MODE4()==0) speed_mode=90;
+	
+		
 	
 		if (update)
 		{

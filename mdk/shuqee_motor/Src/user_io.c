@@ -3,7 +3,7 @@
 #include "user_io.h"
 
 #define ADC_TH 0x03e8
-#define ADC_BUFF_SIZE 5
+#define ADC_BUFF_SIZE 10
 #define SEAT_COUNT 4
 
 enum adc_item
@@ -97,7 +97,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		avg = sum/ADC_BUFF_SIZE;
 		adc_result[i] = (uint16_t)avg;
 	}
-	
+	SAFE(motion[MOTION1].high.now=user_get_adc_height1());
+	SAFE(motion[MOTION2].high.now=user_get_adc_height2());
+	SAFE(motion[MOTION3].high.now=user_get_adc_height3());	
+
 	for(i=0; i<SEAT_COUNT; i++)
 	{
 		if(adc_result[i] < ADC_TH)
@@ -139,7 +142,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	
 	status.seat_num = seat_num_tmp;
 }
-
+#ifdef ENV_3DOF
 #ifdef ENV_NOSENSOR
 void down_limit(enum motion_num index)
 {
@@ -161,11 +164,8 @@ void down_limit(enum motion_num index)
 			motion[index].high.now = (255+motion[index].config.adj) * ENV_SPACE;
 	}
 }
-
 void up_limit(enum motion_num index)
-{
-
-}
+{}	
 #else
 void down_limit(enum motion_num index)
 {
@@ -183,7 +183,9 @@ void up_limit(enum motion_num index)
 		motion[index].high.now = (255+motion[index].config.adj) * ENV_SPACE;
 }
 #endif
+#endif
 //extern unsigned char speed_mode;
+#ifdef ENV_3DOF
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin)
@@ -286,3 +288,5 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			break;
 	}
 }
+#endif
+

@@ -13,6 +13,7 @@
 
 #define ENV_AIR
 
+
 #ifdef ENV_3DOF
     /* without sensor */
 	#define ENV_NOSENSOR
@@ -55,6 +56,7 @@
 
 #ifdef ENV_AIR
 	#define ENV_FLASH_LED
+	#define ENV_NOSENSOR
     /* need to reset the platform */
 	#define MOTION1_CONFIG_DIR	GPIO_PIN_SET
 	#define MOTION2_CONFIG_DIR	GPIO_PIN_RESET
@@ -66,7 +68,7 @@
 	#define MOTION2_CONFIG_ADJ		0
 	#define MOTION3_CONFIG_ADJ		0
 	/* the environment variable of motion-space*/
-	#define ENV_SPACE 25
+	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
 	#define ENV_SPEED_MAX 37
 	#define ENV_ACCER     (ENV_SPACE * (uint32_t)255 * (uint32_t)20)
