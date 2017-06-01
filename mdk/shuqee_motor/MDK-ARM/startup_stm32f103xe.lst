@@ -579,17 +579,17 @@ ARM Macro Assembler    Page 9
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
 ork --depend=shuqee_motor\startup_stm32f103xe.d -oshuqee_motor\startup_stm32f10
-3xe.o -IC:\Users\zhao\Desktop\github\Repo-Name\mdk\shuqee_motor\MDK-ARM\RTE -IC
-:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Include -IC:\Keil_v5\ARM\PACK\Keil\STM
-32F1xx_DFP\2.2.0 --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION
- SETA 514" --predefine="_RTE_ SETA 1" --predefine="STM32F10X_HD SETA 1" --list=
+3xe.o -I"C:\Users\SHUQUEE8006\Desktop\github - ¸±±¾4\Repo-Name\mdk\shuqee_motor
+\MDK-ARM\RTE" -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\4.2.0\CMSIS\Include -IC:\Keil_v5\
+ARM\PACK\Keil\STM32F1xx_DFP\1.0.5\Device\Include --predefine="__MICROLIB SETA 1
+" --predefine="__UVISION_VERSION SETA 514" --predefine="_RTE_ SETA 1" --predefi
 
 
 
 ARM Macro Assembler    Page 10 
 
 
-startup_stm32f103xe.lst startup_stm32f103xe.s
+ne="STM32F10X_HD SETA 1" --list=startup_stm32f103xe.lst startup_stm32f103xe.s
 
 
 
