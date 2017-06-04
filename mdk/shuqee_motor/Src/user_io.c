@@ -3,7 +3,7 @@
 #include "user_io.h"
 
 #define ADC_TH 0x03e8
-#define ADC_BUFF_SIZE 10
+#define ADC_BUFF_SIZE 11
 #define SEAT_COUNT 4
 
 enum adc_item
@@ -59,8 +59,14 @@ void user_io_init(void)
 	HAL_GPIO_WritePin(OUTPUT_CLR1_GPIO_Port, OUTPUT_CLR1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_CLR2_GPIO_Port, OUTPUT_CLR2_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_CLR3_GPIO_Port, OUTPUT_CLR3_Pin, GPIO_PIN_SET);
+	/*make the seat_led_display_pin up_pull*/
+	HAL_GPIO_WritePin(OUTPUT_SEATLED1_GPIO_Port, OUTPUT_SEATLED1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(OUTPUT_SEATLED2_GPIO_Port, OUTPUT_SEATLED2_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(OUTPUT_SEATLED3_GPIO_Port, OUTPUT_SEATLED3_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(OUTPUT_SEATLED4_GPIO_Port, OUTPUT_SEATLED4_Pin, GPIO_PIN_SET);
 	
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buf, ADC_BUFF_SIZE*ADC_ITEM_COUNT);
+	
 }
 
 uint16_t user_get_adc_height1(void)
@@ -81,8 +87,7 @@ uint16_t user_get_adc_height3(void)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	int i,j;
-	uint32_t sum = 0;
-	uint32_t avg;
+	uint16_t sum = 0;
 	static int delay_count[SEAT_COUNT] = {0};
 	uint16_t seat_num_tmp = 0;
 		
@@ -92,10 +97,13 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		sum = 0;
 		for(j=0; j<ADC_BUFF_SIZE; j++)
 		{
-			sum = sum + (uint32_t)adc_buf[j][i];
+		    if(adc_buf[j][i]>adc_buf[j+1][i])  sum=adc_buf[j][i];
+			  else                               sum=adc_buf[j+1][i];
+				
 		}
-		avg = sum/ADC_BUFF_SIZE;
-		adc_result[i] = (uint16_t)avg;
+	//  sum=sum-adc_buf[0][i]-adc_buf[ADC_BUFF_SIZE-1][i];
+	//	avg = sum/(ADC_BUFF_SIZE);
+		adc_result[i] = (uint16_t)sum;
 	}
 	SAFE(motion[MOTION1].high.now=user_get_adc_height1());
 	SAFE(motion[MOTION2].high.now=user_get_adc_height2());
@@ -104,11 +112,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	for(i=0; i<SEAT_COUNT; i++)
 	{
 		if(adc_result[i] < ADC_TH)
-			delay_count[i] = 1000;
+			delay_count[i] = 1;
 		else
 		{
-			if(delay_count[i])
-				delay_count[i]--;
+				delay_count[i]=0;
 		}
 	}
 	
@@ -118,7 +125,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 			seat_num_tmp++;
 	}
 
-#ifndef ENV_FLASH_LED
+#ifdef ENV_FLASH_LED
 	if(delay_count[0])
 		LED_SEAT1(1);
 	else
@@ -184,7 +191,6 @@ void up_limit(enum motion_num index)
 }
 #endif
 #endif
-//extern unsigned char speed_mode;
 #ifdef ENV_3DOF
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {

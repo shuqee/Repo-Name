@@ -56,9 +56,9 @@
 
 #ifdef ENV_AIR
 	#define ENV_FLASH_LED
-	#define ENV_NOSENSOR
+	#define ENV_RESET
     /* need to reset the platform */
-	#define MOTION1_CONFIG_DIR	GPIO_PIN_SET
+	#define MOTION1_CONFIG_DIR	GPIO_PIN_RESET
 	#define MOTION2_CONFIG_DIR	GPIO_PIN_RESET
 	#define MOTION3_CONFIG_DIR	GPIO_PIN_RESET
 	#define MOTION1_CONFIG_ORIGIN	0
@@ -71,7 +71,7 @@
 	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
 	#define ENV_SPEED_MAX 37
-	#define ENV_ACCER     (ENV_SPACE * (uint32_t)255 * (uint32_t)20)
+	#define ENV_ACCER     (ENV_SPACE * (uint32_t)4096 / (uint32_t)20)
 #endif
 
 /* atomic instructions */
@@ -91,7 +91,7 @@ struct high
 
 enum motion_num
 {
-	MOTION1 = 0,
+	MOTION1=0,
 	MOTION2,
 	MOTION3,
 	MOTION_COUNT

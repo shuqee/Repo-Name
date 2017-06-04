@@ -705,6 +705,7 @@ typedef struct
 #define ADC_CR2_CONTINUOUS(_CONTINUOUS_MODE_)                                  \
   ((_CONTINUOUS_MODE_) << POSITION_VAL(ADC_CR2_CONT))
 
+
 /**
   * @brief Configures the number of discontinuous conversions for the regular group channels.
   * @param _NBR_DISCONTINUOUS_CONV_: Number of discontinuous conversions.

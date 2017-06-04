@@ -59,7 +59,9 @@ UART_HandleTypeDef huart1;
 struct motion_status motion[MOTION_COUNT] = {MOTION1};
 struct status status = {0};
 int flag_rst = 0;	//reset flag
-unsigned char speed_mode=10;//the default date;
+unsigned int speed_mul=50;//the default date;
+unsigned int speed_mode;
+unsigned char speed_bit;	
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,6 +122,7 @@ void delay_ms(uint32_t times)
 }
 
 #ifdef ENV_RESET
+#ifndef ENV_AIR
 /**
   * @brief  Reset the platform,set every motion into the origin.
   * @param  None
@@ -132,7 +135,7 @@ void find_origin(void)
 	for(i=MOTION1; i<MOTION_COUNT; i++)
 	{
 		/* bit0、bit1、bit2 for 1、2、3 motion；not reset：1；reset：0. */
-		flag_rst |= 1<<i;
+		flag_rst |= 1<<i;		
 	}
 	/* at least one motion is not reset, do while */
 	while(flag_rst)
@@ -179,6 +182,16 @@ void find_origin(void)
 		}
 	}
 }
+#else
+void find_air_origin(void)
+{
+	
+		SAFE(motion[MOTION1].high.set = 0);
+	  SAFE(motion[MOTION2].high.set = 0);
+		SAFE(motion[MOTION3].high.set = 0);
+	 // while(user_get_adc_height1()|user_get_adc_height2()|user_get_adc_height3());	
+}	
+#endif
 #endif
 
 /**
@@ -205,9 +218,9 @@ void exchange_nup_ndown(enum motion_num index)
   */
 void user_motion_init(void)
 {
-	enum motion_num i;
+//	enum motion_num i;
 	memset((void *)motion, 0, sizeof(motion));
-	
+	#ifndef ENV_AIR
 	motion[MOTION1].io.dir_port = OUTPUT_DIR1_GPIO_Port;
 	motion[MOTION1].io.dir_pin = OUTPUT_DIR1_Pin;
 	motion[MOTION1].io.pul_port = OUTPUT_PUL1_GPIO_Port;
@@ -244,58 +257,57 @@ void user_motion_init(void)
 	motion[MOTION1].config.adj = MOTION1_CONFIG_ADJ;
 	motion[MOTION2].config.adj = MOTION2_CONFIG_ADJ;
 	motion[MOTION3].config.adj = MOTION3_CONFIG_ADJ;
+	#else
 	
-	for (i=MOTION1; i<MOTION_COUNT; i++)
-	{
-		motion[i].index = i;
-		motion[i].high.set = motion[i].config.origin * ENV_SPACE;
-		if (motion[i].config.dir == GPIO_PIN_SET)
-		{
-			exchange_nup_ndown(i);
-		}
-	}
+	motion[MOTION1].io.dir_port = OUTPUT_DIR1_GPIO_Port;
+	motion[MOTION1].io.dir_pin = OUTPUT_DIR1_Pin;
+	motion[MOTION1].io.pul_port = OUTPUT_PUL1_GPIO_Port;
+	motion[MOTION1].io.pul_pin = OUTPUT_PUL1_Pin;
+
+
+	motion[MOTION2].io.dir_port = OUTPUT_DIR2_GPIO_Port;
+	motion[MOTION2].io.dir_pin = OUTPUT_DIR2_Pin;
+	motion[MOTION2].io.pul_port = OUTPUT_PUL2_GPIO_Port;
+	motion[MOTION2].io.pul_pin = OUTPUT_PUL2_Pin;
+
+	motion[MOTION3].io.dir_port = OUTPUT_DIR3_GPIO_Port;
+	motion[MOTION3].io.dir_pin = OUTPUT_DIR3_Pin;
+	motion[MOTION3].io.pul_port = OUTPUT_PUL3_GPIO_Port;
+	motion[MOTION3].io.pul_pin = OUTPUT_PUL3_Pin;
+
+	
+	motion[MOTION1].config.dir = MOTION1_CONFIG_DIR;
+	motion[MOTION2].config.dir = MOTION2_CONFIG_DIR;
+	motion[MOTION3].config.dir = MOTION3_CONFIG_DIR;
+	
+	motion[MOTION1].config.origin = MOTION1_CONFIG_ORIGIN;
+	motion[MOTION2].config.origin = MOTION2_CONFIG_ORIGIN;
+	motion[MOTION3].config.origin = MOTION3_CONFIG_ORIGIN;
+	
+	motion[MOTION1].config.adj = MOTION1_CONFIG_ADJ;
+	motion[MOTION2].config.adj = MOTION2_CONFIG_ADJ;
+	motion[MOTION3].config.adj = MOTION3_CONFIG_ADJ;	
+	
+	#endif
+//	for (i=MOTION1; i<MOTION_COUNT; i++)
+//	{
+//		motion[i].index = i;
+//		motion[i].high.set = motion[i].config.origin * ENV_SPACE;
+//		if (motion[i].config.dir == GPIO_PIN_SET)
+//		{
+//			exchange_nup_ndown(i);
+//		}
+//	}
 #ifdef ENV_RESET
+#ifdef ENV_AIR
+ find_air_origin();
+#else	
 	find_origin();
+#endif
 #endif
 }
 
 #ifdef ENV_NOSENSOR
-/**
-  * @brief  Free the limit of down move.
-  * @param  None
-  * @retval None
-  */
-void free_ndown(void)
-{
-	enum motion_num i;
-	for (i=MOTION1; i<MOTION_COUNT; i++)
-	{
-		if (motion[i].high.now >= 0 * ENV_SPACE)
-		{
-			/* Allowed to move down */
-			HAL_GPIO_WritePin(motion[i].io.ndown_port, motion[i].io.ndown_pin, GPIO_PIN_SET);
-		}
-	}
-}
-
-/**
-  * @brief  Free the limit of up move.
-  * @param  None
-  * @retval None
-  */
-void free_nup(void)
-{
-	enum motion_num i;
-	for (i=MOTION1; i<MOTION_COUNT; i++)
-	{
-		if (motion[i].high.now <= 255 * ENV_SPACE)
-		{
-			/* Allowed to move up */
-			HAL_GPIO_WritePin(motion[i].io.nup_port, motion[i].io.nup_pin, GPIO_PIN_SET);
-		}
-	}
-}
-#else
 /**
   * @brief  Free the limit of down move.
   * @param  None
@@ -396,16 +408,16 @@ int main(void)
 		status.seat_enable = GET_SEAT_ENABLE();
 		SAFE(status.seat_enable += status.seat_num);
 		SAFE(update = frame.enable);
-		SAFE(free_ndown());
-		SAFE(free_nup());
+//		SAFE(free_ndown());
+//		SAFE(free_nup());
+		    speed_bit=0;
+			  if(GET_SPEED_ADJUST_MODE1()) speed_bit=speed_bit+1;
+        if(GET_SPEED_ADJUST_MODE2()) speed_bit=speed_bit+2;
+				if(GET_SPEED_ADJUST_MODE3()) speed_bit=speed_bit+4;
+				if(GET_SPEED_ADJUST_MODE4()) speed_bit=speed_bit+8;      
+		    speed_mode=speed_bit*speed_mul;
+			  if(speed_bit==0)    speed_mode=80; 
 		
-			  if(GET_SPEED_ADJUST_MODE1()==0) speed_mode=30;
-        if(GET_SPEED_ADJUST_MODE2()==0) speed_mode=50;
-				if(GET_SPEED_ADJUST_MODE3()==0) speed_mode=70;
-				if(GET_SPEED_ADJUST_MODE4()==0) speed_mode=90;
-	
-		
-	
 		if (update)
 		{
 			SAFE(frame.enable = 0);
@@ -452,9 +464,7 @@ int main(void)
 			{
 				send_seat = 1;
 				send_buf[2] = status.id;
-				SAFE(send_buf[3] = status.seat_num);
-				
-				
+				SAFE(send_buf[3] = status.seat_num);				
 			}
 			/* SEAT_END */
 		}
@@ -492,7 +502,7 @@ int main(void)
 			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
 		}
 		/* update the special effects into io */
-		SPB1(status.spb&(1<<0));
+//		SPB1(status.spb&(1<<0));
 		SPB2(status.spb&(1<<1));
 		SPB3(status.spb&(1<<2));
 		SPB4(status.spb&(1<<3));
@@ -589,6 +599,8 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 7;
+	
+  
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -657,7 +669,7 @@ static void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-
+HAL_ADCEx_Calibration_Start(&hadc1);	
 }
 
 /* IWDG init function */

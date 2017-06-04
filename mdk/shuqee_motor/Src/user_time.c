@@ -4,6 +4,7 @@
 #include "user_io.h"
 #include "user_uart.h"
 
+void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index,unsigned char compare);
 void user_time_init(void)
 {
 	__HAL_TIM_SET_AUTORELOAD(&htim1, 999);
@@ -63,7 +64,7 @@ int output_pul(enum motion_num index, GPIO_PinState sign)
 	GPIO_PinState dir = motion[index].dir;
 	GPIO_PinState out_dir = sign;
 	static uint8_t status[MOTION_COUNT] = {0,0,0};
-	
+	#ifndef EVN_AIR
 	switch(status[index])
 	{
 		case 0:
@@ -98,6 +99,8 @@ int output_pul(enum motion_num index, GPIO_PinState sign)
 			status[index] = 0;
 			return 0;
 	}
+	
+	#endif
 }
 
 /**
@@ -108,11 +111,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	enum motion_num index;
 	int now;
 	int set;
-#ifdef ENV_FLASH_LED
-	static int len_count0 = 0;
-	static int len_count1 = 0;
-	static int len_count2 = 0;
-#endif
+  unsigned char compare;
+
 	static uint32_t interval = 999;
 	
 	if (htim->Instance == TIM1)
@@ -151,46 +151,119 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 #else  
 	SAFE(now = motion[index].high.now);
 	set = motion[index].high.set;
-	if(now==set)
+	if(now<=set*1.05&now>=set*0.95)
 	{
 			interval=999;
 		  __HAL_TIM_SET_AUTORELOAD(htim, interval);
+				AIR_FORWARD_PUL(GPIO_PIN_RESET);
+				AIR_REVERSE_PUL(GPIO_PIN_RESET);
 		return;
  
 	}
-	if(now<set)
-	{
-		interval=(ENV_ACCER)/(set-now);       	
+	if(now<set*0.95)
+	{ interval=9; //10us;
+		compare=(set-now)/(ENV_ACCER);       	
 	}
-	 else
+	 if(now>set*1.05)
 	 {	  
-		 interval =  (ENV_ACCER)/(now-set);
+		 compare=(now-set)/(ENV_ACCER);
 	 }
-	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
-	__HAL_TIM_SET_AUTORELOAD(htim, interval*200+ENV_SPEED_MAX);
-	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));	    
+//	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
+	__HAL_TIM_SET_AUTORELOAD(htim, interval*330+ENV_SPEED_MAX);
+	 SAFE((now<set*0.95)?(motion[index].dir=GPIO_PIN_SET):(motion[index].dir=GPIO_PIN_RESET));	    
 /*the fllower is the test led*/
+output_pwm(htim,index,compare);
+#endif
+}
+
+
+void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index,unsigned char compare)
+{
+  static char len_count0 ;
+	static char len_count1;
+	static char len_count2;
+	 char i;
 	if (htim->Instance == TIM1)
-	{		
-		len_count0++;
-		if ((len_count0%speed_mode) == 0)
-			LED_SEAT1_TOGGLE();  
+	{		 len_count0=20-compare;
+		   if(motion[index].dir)  //up
+			 {  AIR_REVERSE_PUL(GPIO_PIN_RESET);
+					for(i=0;i<compare;i++)//the forward ;
+					{
+						 AIR_FORWARD_PUL(GPIO_PIN_SET);
+					} 
+					for(i=0;i<len_count0;i++)//the reverse ;
+					{
+						 AIR_FORWARD_PUL(GPIO_PIN_RESET);
+					} 
+			 }
+			 else
+			 {  AIR_FORWARD_PUL(GPIO_PIN_RESET);
+					for(i=0;i<compare;i++)//the forward ;
+					{
+						 AIR_REVERSE_PUL(GPIO_PIN_SET);
+					} 
+					for(i=0;i<len_count0;i++)//the reverse ;
+					{
+						 AIR_REVERSE_PUL(GPIO_PIN_RESET);
+					} 
+			 }
+		
 	}
 	else if (htim->Instance == TIM2)
 	{			
-		len_count1++;
-		if ((len_count1%speed_mode) == 0)
-			LED_SEAT2_TOGGLE();
+       len_count1=20-compare;
+		   if(motion[index].dir)
+			 {  AIR_REVERSE_PUL(GPIO_PIN_RESET);
+					for(i=0;i<compare;i++)//the forward ;
+					{
+						 AIR_FORWARD_PUL(GPIO_PIN_SET);
+					} 
+					for(i=0;i<len_count1;i++)//the reverse ;
+					{
+						 AIR_FORWARD_PUL(GPIO_PIN_RESET);
+					} 
+			 }
+			 else
+			 {  AIR_FORWARD_PUL(GPIO_PIN_RESET);
+					for(i=0;i<compare;i++)//the forward ;
+					{
+						 AIR_REVERSE_PUL(GPIO_PIN_SET);
+					} 
+					for(i=0;i<len_count1;i++)//the reverse ;
+					{
+						 AIR_REVERSE_PUL(GPIO_PIN_RESET);
+					} 
+			 }
+				
 	}
 	else if (htim->Instance == TIM3)
-	{	
-		len_count2++;
-		if ((len_count2%speed_mode) == 0)
-		LED_SEAT3_TOGGLE();		
-	}
+	{			
+       len_count2=20-compare;
+		   if(motion[index].dir)
+			 {  AIR_REVERSE_PUL(GPIO_PIN_RESET);
+					for(i=0;i<compare;i++)//the forward ;
+					{
+						 AIR_FORWARD_PUL(GPIO_PIN_SET);
+					} 
+					for(i=0;i<len_count2;i++)//the reverse ;
+					{
+						 AIR_FORWARD_PUL(GPIO_PIN_RESET);
+					} 
+			 }
+			 else
+			 {  AIR_FORWARD_PUL(GPIO_PIN_RESET);
+					for(i=0;i<compare;i++)//the forward ;
+					{
+						 AIR_REVERSE_PUL(GPIO_PIN_SET);
+					} 
+					for(i=0;i<len_count2 ;i++)//the reverse ;
+					{
+						 AIR_REVERSE_PUL(GPIO_PIN_RESET);
+					} 
+			 }				
+	}			
 	else
 	{
 		return;
 	}
-#endif
 }

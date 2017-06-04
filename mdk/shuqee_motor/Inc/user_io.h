@@ -8,10 +8,9 @@
 #define LED_SEAT3(x) HAL_GPIO_WritePin(OUTPUT_SEATLED3_GPIO_Port, OUTPUT_SEATLED3_Pin, (GPIO_PinState)(!(x)))
 #define LED_SEAT4(x) HAL_GPIO_WritePin(OUTPUT_SEATLED4_GPIO_Port, OUTPUT_SEATLED4_Pin, (GPIO_PinState)(!(x)))
 
-#define LED_SEAT1_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED1_GPIO_Port, OUTPUT_SEATLED1_Pin)
-#define LED_SEAT2_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED2_GPIO_Port, OUTPUT_SEATLED2_Pin)
-#define LED_SEAT3_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED3_GPIO_Port, OUTPUT_SEATLED3_Pin)
-#define LED_SEAT4_TOGGLE() HAL_GPIO_TogglePin(OUTPUT_SEATLED4_GPIO_Port, OUTPUT_SEATLED4_Pin)
+#define AIR_FORWARD_PUL(x) HAL_GPIO_WritePin(motion[index].io.pul_port,motion[index].io.pul_pin, (GPIO_PinState)(!(x)))//UP
+#define AIR_REVERSE_PUL(x) HAL_GPIO_WritePin(motion[index].io.dir_port,motion[index].io.dir_pin, (GPIO_PinState)(!(x)))//DOWN
+
 
 #define LED(x) do{ \
 	HAL_GPIO_WritePin(OUTPUT_LED0_GPIO_Port, OUTPUT_LED0_Pin, (GPIO_PinState)(!(x))); \
@@ -55,6 +54,7 @@
 #define GET_SPEED_ADJUST_MODE2() (!HAL_GPIO_ReadPin(INPUT_SPEED2_GPIO_Port, INPUT_SPEED2_Pin))
 #define GET_SPEED_ADJUST_MODE3() (!HAL_GPIO_ReadPin(INPUT_SPEED3_GPIO_Port, INPUT_SPEED3_Pin))
 #define GET_SPEED_ADJUST_MODE4() (!HAL_GPIO_ReadPin(INPUT_SPEED4_GPIO_Port, INPUT_SPEED4_Pin))
+
 
 
 /*the new add end*/
