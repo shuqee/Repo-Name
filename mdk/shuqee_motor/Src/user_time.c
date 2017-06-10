@@ -4,7 +4,8 @@
 #include "user_io.h"
 #include "user_uart.h"
 
-void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index,unsigned char compare);
+void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index);
+
 void user_time_init(void)
 {
 	__HAL_TIM_SET_AUTORELOAD(&htim1, 999);
@@ -111,8 +112,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	enum motion_num index;
 	int now;
 	int set;
-  unsigned char compare;
-
+  int compare;
 	static uint32_t interval = 999;
 	
 	if (htim->Instance == TIM1)
@@ -151,117 +151,160 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 #else  
 	SAFE(now = motion[index].high.now);
 	set = motion[index].high.set;
-	if(now<=set*1.05&now>=set*0.95)
+	if((now<=set*1.05)&(now>=set*0.995))
 	{
 			interval=999;
 		  __HAL_TIM_SET_AUTORELOAD(htim, interval);
 				AIR_FORWARD_PUL(GPIO_PIN_RESET);
 				AIR_REVERSE_PUL(GPIO_PIN_RESET);
+
+	    	motion[index].high.flag_bit=0;
 		return;
  
 	}
-	if(now<set*0.95)
-	{ interval=9; //10us;
+	if(now<set)
+	{ 
 		compare=(set-now)/(ENV_ACCER);       	
 	}
-	 if(now>set*1.05)
-	 {	  
+	 if(now>set)
+	 {  
 		 compare=(now-set)/(ENV_ACCER);
 	 }
 //	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
-	__HAL_TIM_SET_AUTORELOAD(htim, interval*330+ENV_SPEED_MAX);
-	 SAFE((now<set*0.95)?(motion[index].dir=GPIO_PIN_SET):(motion[index].dir=GPIO_PIN_RESET));	    
-/*the fllower is the test led*/
-output_pwm(htim,index,compare);
+	   motion[index].high.flag_bit=1;
+
+	 if(motion[index].high.flag_bit==1)
+		{
+		//	motion[index].high.value=(float)compare*2.0*(float)temp_speed/8.0;
+			motion[index].high.value=(float)compare*(float)temp_speed/8.0;
+		}
+		 /*Should be add the limit up and down   START*/
+		if(motion[index].high.value>=ENV_SPEED_MAX)//the up theriod;
+		{
+		       motion[index].high.value=ENV_SPEED_MAX;
+		}
+		if(motion[index].high.value<=ENV_SPEED_MIN)//the down theriod;
+		{
+		    motion[index].high.value=ENV_SPEED_MIN;
+		}	
+		 /*Should be add the limit up and down   END*/		
+	__HAL_TIM_SET_AUTORELOAD(htim,159); 
+	 SAFE((now<set)?(motion[index].dir=GPIO_PIN_SET):(motion[index].dir=GPIO_PIN_RESET));	    
+	 output_pwm(htim,index);
 #endif
 }
 
 
-void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index,unsigned char compare)
+void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)
 {
-  static char len_count0 ;
-	static char len_count1;
-	static char len_count2;
-	 char i;
+  static unsigned char len_count0 ;
+	static unsigned char len_count1;
+	static unsigned char len_count2;
 	if (htim->Instance == TIM1)
-	{		 len_count0=20-compare;
+	{		 len_count0++;
 		   if(motion[index].dir)  //up
-			 {  AIR_REVERSE_PUL(GPIO_PIN_RESET);
-					for(i=0;i<compare;i++)//the forward ;
-					{
-						 AIR_FORWARD_PUL(GPIO_PIN_SET);
-					} 
-					for(i=0;i<len_count0;i++)//the reverse ;
-					{
-						 AIR_FORWARD_PUL(GPIO_PIN_RESET);
-					} 
-			 }
+			 {    if(len_count0<=(motion[index].high.value+feedback)) 	//the forward ;
+							{
+								AIR_FORWARD_PUL(GPIO_PIN_SET);
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								
+							}	
+							else  if(len_count0<=128&len_count0>(motion[index].high.value+feedback))
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+							}
+			 } 
+	 
 			 else
-			 {  AIR_FORWARD_PUL(GPIO_PIN_RESET);
-					for(i=0;i<compare;i++)//the forward ;
-					{
-						 AIR_REVERSE_PUL(GPIO_PIN_SET);
-					} 
-					for(i=0;i<len_count0;i++)//the reverse ;
-					{
-						 AIR_REVERSE_PUL(GPIO_PIN_RESET);
-					} 
-			 }
-		
+			 {   
+				      if(len_count0<=(motion[index].high.value+feedback)) 	//the REVERSE;
+							{
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								AIR_REVERSE_PUL(GPIO_PIN_SET);
+								
+							}	
+							else  if(len_count0<=128&len_count0>(motion[index].high.value+feedback))
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+							}
+			     
+				}
+			 if(len_count0>=128)  len_count0=0;
 	}
 	else if (htim->Instance == TIM2)
-	{			
-       len_count1=20-compare;
-		   if(motion[index].dir)
-			 {  AIR_REVERSE_PUL(GPIO_PIN_RESET);
-					for(i=0;i<compare;i++)//the forward ;
-					{
-						 AIR_FORWARD_PUL(GPIO_PIN_SET);
-					} 
-					for(i=0;i<len_count1;i++)//the reverse ;
-					{
-						 AIR_FORWARD_PUL(GPIO_PIN_RESET);
-					} 
-			 }
+	{		 len_count1++;
+		   if(motion[index].dir)  //up
+			 { 	  if(len_count1<=(motion[index].high.value+feedback)) 	//the forward ;
+							{
+								AIR_FORWARD_PUL(GPIO_PIN_SET);
+							
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								
+							}	
+							else  if((len_count1<=128)&(len_count1>(motion[index].high.value+feedback)))
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+							
+							}
+			 } 
+	 
 			 else
-			 {  AIR_FORWARD_PUL(GPIO_PIN_RESET);
-					for(i=0;i<compare;i++)//the forward ;
-					{
-						 AIR_REVERSE_PUL(GPIO_PIN_SET);
-					} 
-					for(i=0;i<len_count1;i++)//the reverse ;
-					{
-						 AIR_REVERSE_PUL(GPIO_PIN_RESET);
-					} 
-			 }
+			 {    
+				      if(len_count1<=(motion[index].high.value+feedback)) 	//the REVERSE;
+							{
 				
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								AIR_REVERSE_PUL(GPIO_PIN_SET);
+								
+							}	
+							else  if((len_count1<=128)&(len_count1>(motion[index].high.value+feedback)))
+							{
+							
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+							}
+			     
+				}
+			     
+			if(len_count1>=128)  len_count1=0;	
 	}
 	else if (htim->Instance == TIM3)
-	{			
-       len_count2=20-compare;
-		   if(motion[index].dir)
-			 {  AIR_REVERSE_PUL(GPIO_PIN_RESET);
-					for(i=0;i<compare;i++)//the forward ;
-					{
-						 AIR_FORWARD_PUL(GPIO_PIN_SET);
-					} 
-					for(i=0;i<len_count2;i++)//the reverse ;
-					{
-						 AIR_FORWARD_PUL(GPIO_PIN_RESET);
-					} 
-			 }
+	{		 len_count2++;
+		   if(motion[index].dir)  //up
+			 {  
+				      if(len_count2<=(motion[index].high.value+feedback)) 	//the forward ;
+							{
+								AIR_FORWARD_PUL(GPIO_PIN_SET);
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								
+							}	
+							else  if((len_count2<=128)&(len_count2>(motion[index].high.value+feedback)))
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+							}
+			 } 
+	 
 			 else
-			 {  AIR_FORWARD_PUL(GPIO_PIN_RESET);
-					for(i=0;i<compare;i++)//the forward ;
-					{
-						 AIR_REVERSE_PUL(GPIO_PIN_SET);
-					} 
-					for(i=0;i<len_count2 ;i++)//the reverse ;
-					{
-						 AIR_REVERSE_PUL(GPIO_PIN_RESET);
-					} 
-			 }				
-	}			
+			 {    	       
+				      if(len_count2<=(motion[index].high.value+feedback)) 	//the REVERSE;
+							{
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								AIR_REVERSE_PUL(GPIO_PIN_SET);
+								
+							}	
+							else  if((len_count2<=128)&(len_count2>(motion[index].high.value+feedback)))
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+							}
+			     
+				}
+			 			if(len_count2>=128)  len_count2=0;	
+	}		
 	else
 	{
 		return;

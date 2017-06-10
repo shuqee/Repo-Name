@@ -86,24 +86,29 @@ uint16_t user_get_adc_height3(void)
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-	int i,j;
-	uint16_t sum = 0;
+	int i,j,z;
+	uint16_t temp;
 	static int delay_count[SEAT_COUNT] = {0};
 	uint16_t seat_num_tmp = 0;
 		
 	(void)hadc;
 	for(i=0; i<ADC_ITEM_COUNT; i++)
 	{
-		sum = 0;
-		for(j=0; j<ADC_BUFF_SIZE; j++)
+	
+		for(j=0; j<ADC_BUFF_SIZE-1; j++)
 		{
-		    if(adc_buf[j][i]>adc_buf[j+1][i])  sum=adc_buf[j][i];
-			  else                               sum=adc_buf[j+1][i];
+       for(z=0;z<ADC_BUFF_SIZE-j-1;z++)
+			{
+			     if(adc_buf[j][i]>adc_buf[j+1][i])
+					 {
+					    temp=adc_buf[j+1][i];
+						  adc_buf[j+1][i]=adc_buf[j][i];
+						  adc_buf[j][i]=temp;
+					 }
+			}
 				
 		}
-	//  sum=sum-adc_buf[0][i]-adc_buf[ADC_BUFF_SIZE-1][i];
-	//	avg = sum/(ADC_BUFF_SIZE);
-		adc_result[i] = (uint16_t)sum;
+		adc_result[i] =adc_buf[5][i];
 	}
 	SAFE(motion[MOTION1].high.now=user_get_adc_height1());
 	SAFE(motion[MOTION2].high.now=user_get_adc_height2());

@@ -70,8 +70,10 @@
 	/* the environment variable of motion-space*/
 	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
-	#define ENV_SPEED_MAX 37
-	#define ENV_ACCER     (ENV_SPACE * (uint32_t)4096 / (uint32_t)20)
+	#define ENV_SPEED_MAX 96
+	#define ENV_SPEED_MIN 20
+	#define ENV_SPEED_ACCER 5
+	#define ENV_ACCER     ((uint32_t)4096 / (uint32_t)128)
 #endif
 
 /* atomic instructions */
@@ -87,6 +89,9 @@ struct high
 	int now;
 	/* set height of motion */
 	int set;
+/*the compare date for now-set  or  set-now*/
+	int value;
+	int flag_bit;
 };
 
 enum motion_num

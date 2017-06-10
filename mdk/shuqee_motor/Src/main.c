@@ -59,9 +59,9 @@ UART_HandleTypeDef huart1;
 struct motion_status motion[MOTION_COUNT] = {MOTION1};
 struct status status = {0};
 int flag_rst = 0;	//reset flag
-unsigned int speed_mul=50;//the default date;
-unsigned int speed_mode;
-unsigned char speed_bit;	
+int speed_mode;	
+int temp_speed;
+int feedback;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -410,14 +410,13 @@ int main(void)
 		SAFE(update = frame.enable);
 //		SAFE(free_ndown());
 //		SAFE(free_nup());
-		    speed_bit=0;
-			  if(GET_SPEED_ADJUST_MODE1()) speed_bit=speed_bit+1;
-        if(GET_SPEED_ADJUST_MODE2()) speed_bit=speed_bit+2;
-				if(GET_SPEED_ADJUST_MODE3()) speed_bit=speed_bit+4;
-				if(GET_SPEED_ADJUST_MODE4()) speed_bit=speed_bit+8;      
-		    speed_mode=speed_bit*speed_mul;
-			  if(speed_bit==0)    speed_mode=80; 
-		
+		     speed_mode=0;
+			  if(GET_SPEED_ADJUST_MODE1()==0) speed_mode=speed_mode+1;
+        if(GET_SPEED_ADJUST_MODE2()==0) speed_mode=speed_mode+2;
+				if(GET_SPEED_ADJUST_MODE3()==0) speed_mode=speed_mode+4;
+				if(GET_SPEED_ADJUST_MODE4()==0) speed_mode=speed_mode+8;  
+        temp_speed=speed_mode;		
+		    
 		if (update)
 		{
 			SAFE(frame.enable = 0);
@@ -502,7 +501,7 @@ int main(void)
 			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
 		}
 		/* update the special effects into io */
-//		SPB1(status.spb&(1<<0));
+		SPB1(status.spb&(1<<0));
 		SPB2(status.spb&(1<<1));
 		SPB3(status.spb&(1<<2));
 		SPB4(status.spb&(1<<3));
