@@ -104,15 +104,29 @@ int output_pul(enum motion_num index, GPIO_PinState sign)
 	#endif
 }
 
+//float PID_realize(float speed)
+//{  
+//	 float incrementSpeed;
+//   pid.SetSpeed=speed;
+//	 pid.err=pid.SetSpeed-pid.ActualSpeed;
+//	 incrementSpeed=pid.Kd*(pid.err-pid.err_next)+pid.Ki*pid.err+pid.Kp*(pid.err-2*pid.err_next+pid.err_last);
+//	 pid.ActualSpeed+=incrementSpeed;
+//	 pid.err_last=pid.err_next;
+//	 pid.err_next=pid.err;
+//	 return pid.ActualSpeed;
+//	 
+//}
+
 /**
   * @brief     Callback function of timer.
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	enum motion_num index;
-	int now;
-	int set;
-  int compare;
+//	int now;
+//	int set;
+	float incrementSpeed;
+	float Speed_temp;
 	static uint32_t interval = 999;
 	
 	if (htim->Instance == TIM1)
@@ -127,8 +141,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		index = MOTION3;
 	}
-	else
-		
+	else		
 	{
 		return;
 	}
@@ -149,46 +162,79 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	__HAL_TIM_SET_AUTORELOAD(htim, interval);
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));
 #else  
-	SAFE(now = motion[index].high.now);
-	set = motion[index].high.set;
-	if((now<=set*1.05)&(now>=set*0.995))
-	{
-			interval=999;
-		  __HAL_TIM_SET_AUTORELOAD(htim, interval);
-				AIR_FORWARD_PUL(GPIO_PIN_RESET);
-				AIR_REVERSE_PUL(GPIO_PIN_RESET);
+//	SAFE(now = motion[index].high.now);
+//	set = motion[index].high.set;
+//	if((now<=set*1.005)&(now>=set*0.995))
+//	{
+//			interval=999;
+//		  __HAL_TIM_SET_AUTORELOAD(htim, interval);
+//				AIR_FORWARD_PUL(GPIO_PIN_RESET);
+//				AIR_REVERSE_PUL(GPIO_PIN_RESET);
 
-	    	motion[index].high.flag_bit=0;
-		return;
- 
-	}
-	if(now<set)
-	{ 
-		compare=(set-now)/(ENV_ACCER);       	
-	}
-	 if(now>set)
-	 {  
-		 compare=(now-set)/(ENV_ACCER);
+//	    	motion[index].high.flag_bit=0;
+//		return;
+// 
+//	}
+//	if(now<set)
+//	{ if(motion[index].high.flag_bit==0)
+//		 interval=(set-now)/(ENV_ACCER);   
+//    else 	interval=512-interval;		
+//	}
+//	 if(now>set)
+//	 {  if(motion[index].high.flag_bit==0)
+//		  interval=(now-set)/(ENV_ACCER);
+//		 else 	interval=512-interval;	
+//	 }
+	 
+	 SAFE(motion[index].pid.ActualSpeed = motion[index].high.now);
+   pid.SetSpeed=motion[index].high.set;
+	 pid.err=pid.SetSpeed-pid.ActualSpeed;
+	 incrementSpeed=pid.Kd*(pid.err-pid.err_next)+pid.Ki*pid.err+pid.Kp*(pid.err-2*pid.err_next+pid.err_last);
+	 pid.ActualSpeed+=incrementSpeed;
+	 pid.err_last=pid.err_next;
+	 pid.err_next=pid.err;
+   Speed_temp=pid.ActualSpeed/(ENV_ACCER);
+	 if(Speed_temp>510)
+	 {
+			Speed_temp=450;  //限制最大的速度；
 	 }
-//	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
-	   motion[index].high.flag_bit=1;
-
-	 if(motion[index].high.flag_bit==1)
-		{
-		//	motion[index].high.value=(float)compare*2.0*(float)temp_speed/8.0;
-			motion[index].high.value=(float)compare*(float)temp_speed/8.0;
-		}
+	 while(1)
+	 {
+			if(pid.SetSpeed==pid.ActualSpeed)
+			{
+					interval = 999;
+	      	__HAL_TIM_SET_AUTORELOAD(htim, interval);
+			    return;
+			}
+			if(pid.ActualSpeed>pid.SetSpeed)  //如果当前的速度大于设定的速度，减少占空比；
+			{
+				  	if((pid.ActualSpeed-pid.SetSpeed)>undulate) //如果对比差值超出允许范围，进行调节；
+						{
+									
+						}
+						else
+						{
+								interval = 999;
+								__HAL_TIM_SET_AUTORELOAD(htim, interval);
+							  return;						
+						}
+			}
+	 }
+	interval = (interval<ENV_SPEED_MIN)?ENV_SPEED_MIN:interval;   //中断时间太少，会引起程序乱套；
+	 
+////			motion[index].high.value=(float)compare*(float)temp_speed/8.0;
+	
 		 /*Should be add the limit up and down   START*/
-		if(motion[index].high.value>=ENV_SPEED_MAX)//the up theriod;
-		{
-		       motion[index].high.value=ENV_SPEED_MAX;
-		}
-		if(motion[index].high.value<=ENV_SPEED_MIN)//the down theriod;
-		{
-		    motion[index].high.value=ENV_SPEED_MIN;
-		}	
+//		if(motion[index].high.value>=ENV_SPEED_MAX)//the up theriod;
+//		{
+//		       motion[index].high.value=ENV_SPEED_MAX;
+//		}
+//		if(motion[index].high.value<=ENV_SPEED_MIN)//the down theriod;
+//		{
+//		    motion[index].high.value=ENV_SPEED_MIN;
+//		}	
 		 /*Should be add the limit up and down   END*/		
-	__HAL_TIM_SET_AUTORELOAD(htim,159); 
+	__HAL_TIM_SET_AUTORELOAD(htim,interval); 
 	 SAFE((now<set)?(motion[index].dir=GPIO_PIN_SET):(motion[index].dir=GPIO_PIN_RESET));	    
 	 output_pwm(htim,index);
 #endif
@@ -197,116 +243,117 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)
 {
-  static unsigned char len_count0 ;
-	static unsigned char len_count1;
-	static unsigned char len_count2;
+
 	if (htim->Instance == TIM1)
-	{		 len_count0++;
+	{		
 		   if(motion[index].dir)  //up
-			 {    if(len_count0<=(motion[index].high.value+feedback)) 	//the forward ;
-							{
-								AIR_FORWARD_PUL(GPIO_PIN_SET);
+			 {   	//the forward ;
+							if(motion[index].high.flag_bit==0)
+							{	AIR_FORWARD_PUL(GPIO_PIN_SET);
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
-								
+								motion[index].high.flag_bit=1;
 							}	
-							else  if(len_count0<=128&len_count0>(motion[index].high.value+feedback))
+							
+							else  if(motion[index].high.flag_bit==1)
 							{
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
 							}
 			 } 
 	 
 			 else
 			 {   
-				      if(len_count0<=(motion[index].high.value+feedback)) 	//the REVERSE;
+				      if(motion[index].high.flag_bit==0) 	//the REVERSE;
 							{
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
 								AIR_REVERSE_PUL(GPIO_PIN_SET);
-								
+								motion[index].high.flag_bit=1;
 							}	
-							else  if(len_count0<=128&len_count0>(motion[index].high.value+feedback))
+							else  if(motion[index].high.flag_bit==1)
 							{
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
 							}
 			     
 				}
-			 if(len_count0>=128)  len_count0=0;
+		
 	}
 	else if (htim->Instance == TIM2)
-	{		 len_count1++;
-		   if(motion[index].dir)  //up
-			 { 	  if(len_count1<=(motion[index].high.value+feedback)) 	//the forward ;
-							{
-								AIR_FORWARD_PUL(GPIO_PIN_SET);
-							
+	{	   if(motion[index].dir)  //up
+			 {   	//the forward ;
+							if(motion[index].high.flag_bit==0)
+							{	AIR_FORWARD_PUL(GPIO_PIN_SET);
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
-								
+								motion[index].high.flag_bit=1;
 							}	
-							else  if((len_count1<=128)&(len_count1>(motion[index].high.value+feedback)))
+							
+							else  if(motion[index].high.flag_bit==1)
 							{
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
-							
+								motion[index].high.flag_bit=0;
 							}
 			 } 
 	 
 			 else
-			 {    
-				      if(len_count1<=(motion[index].high.value+feedback)) 	//the REVERSE;
+			 {   
+				      if(motion[index].high.flag_bit==0) 	//the REVERSE;
 							{
-				
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
 								AIR_REVERSE_PUL(GPIO_PIN_SET);
-								
+								motion[index].high.flag_bit=1;
 							}	
-							else  if((len_count1<=128)&(len_count1>(motion[index].high.value+feedback)))
+							else  if(motion[index].high.flag_bit==1)
 							{
-							
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
 							}
 			     
 				}
-			     
-			if(len_count1>=128)  len_count1=0;	
+		
 	}
 	else if (htim->Instance == TIM3)
-	{		 len_count2++;
-		   if(motion[index].dir)  //up
-			 {  
-				      if(len_count2<=(motion[index].high.value+feedback)) 	//the forward ;
-							{
-								AIR_FORWARD_PUL(GPIO_PIN_SET);
+	{		   if(motion[index].dir)  //up
+			 {   	//the forward ;
+							if(motion[index].high.flag_bit==0)
+							{	AIR_FORWARD_PUL(GPIO_PIN_SET);
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
-								
+								motion[index].high.flag_bit=1;
 							}	
-							else  if((len_count2<=128)&(len_count2>(motion[index].high.value+feedback)))
+							
+							else  if(motion[index].high.flag_bit==1)
 							{
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
 							}
 			 } 
 	 
 			 else
-			 {    	       
-				      if(len_count2<=(motion[index].high.value+feedback)) 	//the REVERSE;
+			 {   
+				      if(motion[index].high.flag_bit==0) 	//the REVERSE;
 							{
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
 								AIR_REVERSE_PUL(GPIO_PIN_SET);
-								
+								motion[index].high.flag_bit=1;
 							}	
-							else  if((len_count2<=128)&(len_count2>(motion[index].high.value+feedback)))
+							else  if(motion[index].high.flag_bit==1)
 							{
 								AIR_REVERSE_PUL(GPIO_PIN_RESET);
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
 							}
 			     
 				}
-			 			if(len_count2>=128)  len_count2=0;	
-	}		
+		
+	}
 	else
 	{
 		return;
 	}
 }
+
+

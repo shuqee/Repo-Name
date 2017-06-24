@@ -11,6 +11,7 @@ extern void delay_ms(uint32_t times);
 extern int speed_mode;
 extern int temp_speed;
 extern int feedback;
+extern unsigned char undulate;
 #ifdef ENV_RESET
 extern void set_pul(enum motion_num index, GPIO_PinState dir, uint16_t interval, uint32_t conut);
 #endif
