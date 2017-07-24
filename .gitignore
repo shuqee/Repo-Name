@@ -1,0 +1,15 @@
+*.mxproject
+/mdk/shuqee_motor/shuqee_motor.ioc
+*.Administrator
+*.york
+*.uvoptx
+*.lst
+*.axf
+*.htm
+*.lnp
+*.map
+*.sct
+*.crf
+*.d
+*.dep
+*.o
