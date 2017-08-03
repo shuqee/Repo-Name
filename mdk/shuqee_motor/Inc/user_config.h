@@ -70,8 +70,12 @@
 	/* the environment variable of motion-space*/
 	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
-	#define ENV_SPEED_MAX 37
-	#define ENV_ACCER     (ENV_SPACE * (uint32_t)4096 / (uint32_t)20)
+	#define ENV_SPEED_MAX 96
+	#define ENV_SPEED_MIN 20
+	#define ENV_SPEED_ACCER 5
+	#define ENV_ACCER     ((uint32_t)4096 / (uint32_t)50)
+	#define x 129.0
+	#define y 550.0
 #endif
 
 /* atomic instructions */
@@ -87,8 +91,23 @@ struct high
 	int now;
 	/* set height of motion */
 	int set;
+/*the compare date for now-set  or  set-now*/
+	float value;
+	int flag_bit;
+	int error;
+	int error_next;
+	int set_compare;
 };
-
+struct pid
+{
+	float SetSpeed;   
+	float ActualSpeed;
+	float err;
+	float err_next;
+	float err_last;
+	float Kp,Ki,Kd;
+	int pid_flag;
+}; //声明SRUCT类型的结构体，要再声明的前面放置结构体；
 enum motion_num
 {
 	MOTION1=0,
@@ -128,6 +147,7 @@ struct motion_status
 	GPIO_PinState dir;
 	struct motion_io io;
 	struct motion_config config;
+	struct pid pid;
 };
 
 struct status
@@ -143,6 +163,7 @@ struct status
 	uint8_t uplimit[MOTION_COUNT];
 	uint8_t downlimit[MOTION_COUNT];
 };
+	
 
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;

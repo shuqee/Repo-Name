@@ -59,9 +59,9 @@ UART_HandleTypeDef huart1;
 struct motion_status motion[MOTION_COUNT] = {MOTION1};
 struct status status = {0};
 int flag_rst = 0;	//reset flag
-unsigned int speed_mul=50;//the default date;
-unsigned int speed_mode;
-unsigned char speed_bit;	
+int speed_mode;	
+int temp_speed; 
+struct pid pid;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -344,6 +344,22 @@ void free_nup(void)
 	}
 }
 #endif
+#ifdef ENV_AIR
+/**
+  * @brief  PID_INIT.
+  * @param  None
+  * @retval None
+  */
+void PID_Init()
+{
+	pid.err=0.0;
+	pid.err_next=0.0;
+	pid.err_last=0.0;
+//	pid.Kp=35;
+//	pid.Ki=10;
+//	pid.Kd=1;
+}
+#endif
 /* USER CODE END 0 */
 
 int main(void)
@@ -399,7 +415,7 @@ int main(void)
 	user_time_init();
 	user_uart_init();
 	HAL_IWDG_Start(&hiwdg);
-	  
+	PID_Init();
 	init_flag = 1;
   
 	while (init_flag != 0)
@@ -410,14 +426,13 @@ int main(void)
 		SAFE(update = frame.enable);
 //		SAFE(free_ndown());
 //		SAFE(free_nup());
-		    speed_bit=0;
-			  if(GET_SPEED_ADJUST_MODE1()) speed_bit=speed_bit+1;
-        if(GET_SPEED_ADJUST_MODE2()) speed_bit=speed_bit+2;
-				if(GET_SPEED_ADJUST_MODE3()) speed_bit=speed_bit+4;
-				if(GET_SPEED_ADJUST_MODE4()) speed_bit=speed_bit+8;      
-		    speed_mode=speed_bit*speed_mul;
-			  if(speed_bit==0)    speed_mode=80; 
-		
+		     speed_mode=0;
+			  if(GET_SPEED_ADJUST_MODE1()==0) speed_mode=speed_mode+1;
+        if(GET_SPEED_ADJUST_MODE2()==0) speed_mode=speed_mode+2;
+				if(GET_SPEED_ADJUST_MODE3()==0) speed_mode=speed_mode+4;
+				if(GET_SPEED_ADJUST_MODE4()==0) speed_mode=speed_mode+8;  
+        temp_speed=speed_mode;		
+		    
 		if (update)
 		{
 			SAFE(frame.enable = 0);
@@ -502,7 +517,7 @@ int main(void)
 			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
 		}
 		/* update the special effects into io */
-//		SPB1(status.spb&(1<<0));
+		SPB1(status.spb&(1<<0));
 		SPB2(status.spb&(1<<1));
 		SPB3(status.spb&(1<<2));
 		SPB4(status.spb&(1<<3));

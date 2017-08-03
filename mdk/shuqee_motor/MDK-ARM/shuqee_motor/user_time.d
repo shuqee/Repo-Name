@@ -34,3 +34,4 @@ shuqee_motor\user_time.o: ../Inc/user_config.h
 shuqee_motor\user_time.o: ../Inc/user_time.h
 shuqee_motor\user_time.o: ../Inc/user_io.h
 shuqee_motor\user_time.o: ../Inc/user_uart.h
+shuqee_motor\user_time.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h

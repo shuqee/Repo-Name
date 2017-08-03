@@ -81,26 +81,21 @@
       <Books>
         <Book>
           <Number>0</Number>
-          <Title>Quick Start Guide (MCBSTM32E)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Boards/Keil/MCBSTM32E/Documentation/STM32E_QSG.pdf</Path>
+          <Title>Base Board Schematics (MCBSTM32E)</Title>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.5\Documents\mcbstm32e-base-board-schematics.pdf</Path>
         </Book>
         <Book>
           <Number>1</Number>
-          <Title>Base Board Schematics (MCBSTM32E)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Boards/Keil/MCBSTM32E/Documentation/mcbstm32e-base-board-schematics.pdf</Path>
+          <Title>Display Board Schematics (MCBSTM32E)</Title>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.5\Documents\mcbstm32e-display-board-schematics.pdf</Path>
         </Book>
         <Book>
           <Number>2</Number>
-          <Title>Display Board Schematics (MCBSTM32E)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Boards/Keil/MCBSTM32E/Documentation/mcbstm32e-display-board-schematics.pdf</Path>
+          <Title>User Manual (MCBSTM32E)</Title>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.5\Documents\mcbstm32e.chm</Path>
         </Book>
         <Book>
           <Number>3</Number>
-          <Title>User Manual (MCBSTM32E)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Boards/Keil/MCBSTM32E/Documentation/mcbstm32e.chm</Path>
-        </Book>
-        <Book>
-          <Number>4</Number>
           <Title>MCBSTM32E Evaluation Board Web Page (MCBSTM32E)</Title>
           <Path>http://www.keil.com/mcbstm32e/</Path>
         </Book>
@@ -174,7 +169,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>ST-LINKIII-KEIL_SWO</Key>
-          <Name>-U-O142 -I0 -O10446 -S0 -C0 -A0 -N00("ARM CoreSight SW-DP") -D00(1BA01477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20000000 -FC800 -FN1 -FF0STM32F10x_512.FLM -FS08000000 -FL080000 -FP0($$Device:STM32F103VE$Flash\STM32F10x_512.FLM)</Name>
+          <Name>-U53FF6E066782544822360167 -I0 -O10446 -S1 -C0 -A0 -N00("ARM CoreSight SW-DP") -D00(1BA01477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20000000 -FC800 -FN1 -FF0STM32F10x_512.FLM -FS08000000 -FL080000 -FP0($$Device:STM32F103VE$Flash\STM32F10x_512.FLM)</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
       <Breakpoint/>
@@ -197,17 +192,37 @@
         <Ww>
           <count>3</count>
           <WinNumber>1</WinNumber>
-          <ItemText>now</ItemText>
+          <ItemText>adc_result</ItemText>
         </Ww>
         <Ww>
           <count>4</count>
           <WinNumber>1</WinNumber>
-          <ItemText>set</ItemText>
+          <ItemText>increamentSpeed</ItemText>
         </Ww>
         <Ww>
           <count>5</count>
           <WinNumber>1</WinNumber>
-          <ItemText>adc_result</ItemText>
+          <ItemText>test</ItemText>
+        </Ww>
+        <Ww>
+          <count>6</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>now_rate</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>set_rate</ItemText>
+        </Ww>
+        <Ww>
+          <count>8</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>temp_speed,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>9</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>P_DATE,0x10</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>
