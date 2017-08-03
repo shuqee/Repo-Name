@@ -3,6 +3,7 @@
 #include "user_time.h"
 #include "user_io.h"
 #include "user_uart.h"
+<<<<<<< HEAD
 #include "math.h"
 float test;
 float increamentSpeed;
@@ -33,6 +34,11 @@ int pid_deal(int now_position,int set_position,enum motion_num index)
 	/*转化速度值变为PWM控制的比例*/ // 4096/50ms为比例的最大速度；对应占空比的是8.2/COUNTER;
 	return (increamentSpeed/15);	 
 }
+=======
+
+void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index);
+
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 void user_time_init(void)
 {
 	__HAL_TIM_SET_AUTORELOAD(&htim1, 999);
@@ -131,14 +137,34 @@ int output_pul(enum motion_num index, GPIO_PinState sign)
 	#endif
 }
 
+//float PID_realize(float speed)
+//{  
+//	 float incrementSpeed;
+//   pid.SetSpeed=speed;
+//	 pid.err=pid.SetSpeed-pid.ActualSpeed;
+//	 incrementSpeed=pid.Kd*(pid.err-pid.err_next)+pid.Ki*pid.err+pid.Kp*(pid.err-2*pid.err_next+pid.err_last);
+//	 pid.ActualSpeed+=incrementSpeed;
+//	 pid.err_last=pid.err_next;
+//	 pid.err_next=pid.err;
+//	 return pid.ActualSpeed;
+//	 
+//}
+
 /**
   * @brief     Callback function of timer.
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	enum motion_num index;
+<<<<<<< HEAD
 	int now;
 	int set;
+=======
+//	int now;
+//	int set;
+	float incrementSpeed;
+	float Speed_temp;
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 	static uint32_t interval = 999;
 	
 	if (htim->Instance == TIM1)
@@ -153,8 +179,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		index = MOTION3;
 	}
-	else
-		
+	else		
 	{
 		return;
 	}
@@ -175,6 +200,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	__HAL_TIM_SET_AUTORELOAD(htim, interval);
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));
 #else  
+<<<<<<< HEAD
 	SAFE(now = motion[index].high.now);
 	set = motion[index].high.set;
 	if(motion[index].high.set!=motion[index].high.set_compare)
@@ -264,6 +290,105 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
                   motion[index].high.flag_bit=0;
 								  motion[index].pid.pid_flag=1;
 								  return;								
+=======
+//	SAFE(now = motion[index].high.now);
+//	set = motion[index].high.set;
+//	if((now<=set*1.005)&(now>=set*0.995))
+//	{
+//			interval=999;
+//		  __HAL_TIM_SET_AUTORELOAD(htim, interval);
+//				AIR_FORWARD_PUL(GPIO_PIN_RESET);
+//				AIR_REVERSE_PUL(GPIO_PIN_RESET);
+
+//	    	motion[index].high.flag_bit=0;
+//		return;
+// 
+//	}
+//	if(now<set)
+//	{ if(motion[index].high.flag_bit==0)
+//		 interval=(set-now)/(ENV_ACCER);   
+//    else 	interval=512-interval;		
+//	}
+//	 if(now>set)
+//	 {  if(motion[index].high.flag_bit==0)
+//		  interval=(now-set)/(ENV_ACCER);
+//		 else 	interval=512-interval;	
+//	 }
+	 
+	 SAFE(motion[index].pid.ActualSpeed = motion[index].high.now);
+   pid.SetSpeed=motion[index].high.set;
+	 pid.err=pid.SetSpeed-pid.ActualSpeed;
+	 incrementSpeed=pid.Kd*(pid.err-pid.err_next)+pid.Ki*pid.err+pid.Kp*(pid.err-2*pid.err_next+pid.err_last);
+	 pid.ActualSpeed+=incrementSpeed;
+	 pid.err_last=pid.err_next;
+	 pid.err_next=pid.err;
+   Speed_temp=pid.ActualSpeed/(ENV_ACCER);
+	 if(Speed_temp>510)
+	 {
+			Speed_temp=450;  //限制最大的速度；
+	 }
+	 while(1)
+	 {
+			if(pid.SetSpeed==pid.ActualSpeed)
+			{
+					interval = 999;
+	      	__HAL_TIM_SET_AUTORELOAD(htim, interval);
+			    return;
+			}
+			if(pid.ActualSpeed>pid.SetSpeed)  //如果当前的速度大于设定的速度，减少占空比；
+			{
+				  	if((pid.ActualSpeed-pid.SetSpeed)>undulate) //如果对比差值超出允许范围，进行调节；
+						{
+									
+						}
+						else
+						{
+								interval = 999;
+								__HAL_TIM_SET_AUTORELOAD(htim, interval);
+							  return;						
+						}
+			}
+	 }
+	interval = (interval<ENV_SPEED_MIN)?ENV_SPEED_MIN:interval;   //中断时间太少，会引起程序乱套；
+	 
+////			motion[index].high.value=(float)compare*(float)temp_speed/8.0;
+	
+		 /*Should be add the limit up and down   START*/
+//		if(motion[index].high.value>=ENV_SPEED_MAX)//the up theriod;
+//		{
+//		       motion[index].high.value=ENV_SPEED_MAX;
+//		}
+//		if(motion[index].high.value<=ENV_SPEED_MIN)//the down theriod;
+//		{
+//		    motion[index].high.value=ENV_SPEED_MIN;
+//		}	
+		 /*Should be add the limit up and down   END*/		
+	__HAL_TIM_SET_AUTORELOAD(htim,interval); 
+	 SAFE((now<set)?(motion[index].dir=GPIO_PIN_SET):(motion[index].dir=GPIO_PIN_RESET));	    
+	 output_pwm(htim,index);
+#endif
+}
+
+
+void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)
+{
+
+	if (htim->Instance == TIM1)
+	{		
+		   if(motion[index].dir)  //up
+			 {   	//the forward ;
+							if(motion[index].high.flag_bit==0)
+							{	AIR_FORWARD_PUL(GPIO_PIN_SET);
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=1;
+							}	
+							
+							else  if(motion[index].high.flag_bit==1)
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 							}
 			 } 
 	 
@@ -272,6 +397,7 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
 				      if(motion[index].high.flag_bit==0) 	//the REVERSE;
 							{
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+<<<<<<< HEAD
 								AIR_REVERSE_PUL(GPIO_PIN_SET);	
 								__HAL_TIM_SET_AUTORELOAD(htim,x); 
                   motion[index].high.flag_bit=1;
@@ -323,6 +449,35 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
                   motion[index].high.flag_bit=0;
 								  motion[index].pid.pid_flag=1;
 								  return;								
+=======
+								AIR_REVERSE_PUL(GPIO_PIN_SET);
+								motion[index].high.flag_bit=1;
+							}	
+							else  if(motion[index].high.flag_bit==1)
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
+							}
+			     
+				}
+		
+	}
+	else if (htim->Instance == TIM2)
+	{	   if(motion[index].dir)  //up
+			 {   	//the forward ;
+							if(motion[index].high.flag_bit==0)
+							{	AIR_FORWARD_PUL(GPIO_PIN_SET);
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=1;
+							}	
+							
+							else  if(motion[index].high.flag_bit==1)
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 							}
 			 } 
 	 
@@ -331,6 +486,7 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
 				      if(motion[index].high.flag_bit==0) 	//the REVERSE;
 							{
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+<<<<<<< HEAD
 								AIR_REVERSE_PUL(GPIO_PIN_SET);	
 								__HAL_TIM_SET_AUTORELOAD(htim,x); 
                   motion[index].high.flag_bit=1;
@@ -382,6 +538,35 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
                   motion[index].high.flag_bit=0;
 								  motion[index].pid.pid_flag=1;
 								  return;								
+=======
+								AIR_REVERSE_PUL(GPIO_PIN_SET);
+								motion[index].high.flag_bit=1;
+							}	
+							else  if(motion[index].high.flag_bit==1)
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
+							}
+			     
+				}
+		
+	}
+	else if (htim->Instance == TIM3)
+	{		   if(motion[index].dir)  //up
+			 {   	//the forward ;
+							if(motion[index].high.flag_bit==0)
+							{	AIR_FORWARD_PUL(GPIO_PIN_SET);
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=1;
+							}	
+							
+							else  if(motion[index].high.flag_bit==1)
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 							}
 			 } 
 	 
@@ -390,6 +575,7 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
 				      if(motion[index].high.flag_bit==0) 	//the REVERSE;
 							{
 								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+<<<<<<< HEAD
 								AIR_REVERSE_PUL(GPIO_PIN_SET);	
 								__HAL_TIM_SET_AUTORELOAD(htim,x); 
                   motion[index].high.flag_bit=1;
@@ -414,6 +600,20 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
 			     
 				}
 
+=======
+								AIR_REVERSE_PUL(GPIO_PIN_SET);
+								motion[index].high.flag_bit=1;
+							}	
+							else  if(motion[index].high.flag_bit==1)
+							{
+								AIR_REVERSE_PUL(GPIO_PIN_RESET);
+								AIR_FORWARD_PUL(GPIO_PIN_RESET);
+								motion[index].high.flag_bit=0;
+							}
+			     
+				}
+		
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 	}
 	else
 	{
@@ -421,6 +621,7 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
 	}
 }
 
+<<<<<<< HEAD
 /*************************************************************************************************************************************/
 //void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS，50MS检测一次，24%为阀芯预准备状态，37.5%为阀芯的最大
 //	{																																 //开度；有效开度为15-24高电平数；	
@@ -550,4 +751,6 @@ void output_pwm(TIM_HandleTypeDef *htim,enum motion_num index)   //T为8.320MS�
 //}
 
 
+=======
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 

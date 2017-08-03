@@ -58,10 +58,17 @@ UART_HandleTypeDef huart1;
 /* Private variables ---------------------------------------------------------*/
 struct motion_status motion[MOTION_COUNT] = {MOTION1};
 struct status status = {0};
+struct pid pid;
 int flag_rst = 0;	//reset flag
 int speed_mode;	
+<<<<<<< HEAD
 int temp_speed; 
 struct pid pid;
+=======
+int temp_speed;
+int feedback;
+unsigned char undulate=10;
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -345,6 +352,7 @@ void free_nup(void)
 }
 #endif
 #ifdef ENV_AIR
+<<<<<<< HEAD
 /**
   * @brief  PID_INIT.
   * @param  None
@@ -360,6 +368,21 @@ void PID_Init()
 //	pid.Kd=1;
 }
 #endif
+=======
+void PID_Init()
+{
+  pid.SetSpeed=0.0;
+	pid.ActualSpeed=0.0;
+	pid.err=0.0;
+	pid.err_next=0.0;
+	pid.err_last=0.0;
+	pid.Kp=0.2;
+	pid.Ki=0.015;
+	pid.Kd=0.2;
+}
+#endif
+
+>>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 /* USER CODE END 0 */
 
 int main(void)
@@ -414,6 +437,7 @@ int main(void)
 	user_motion_init();
 	user_time_init();
 	user_uart_init();
+	PID_Init();
 	HAL_IWDG_Start(&hiwdg);
 	PID_Init();
 	init_flag = 1;
