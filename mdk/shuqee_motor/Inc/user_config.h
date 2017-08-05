@@ -71,17 +71,11 @@
 	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
 	#define ENV_SPEED_MAX 96
-<<<<<<< HEAD
 	#define ENV_SPEED_MIN 20
 	#define ENV_SPEED_ACCER 5
 	#define ENV_ACCER     ((uint32_t)4096 / (uint32_t)50)
 	#define x 129.0
 	#define y 550.0
-=======
-	#define ENV_SPEED_MIN 100
-	#define ENV_SPEED_ACCER 5
-	#define ENV_ACCER    8
->>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 #endif
 
 /* atomic instructions */
@@ -98,16 +92,11 @@ struct high
 	/* set height of motion */
 	int set;
 /*the compare date for now-set  or  set-now*/
-<<<<<<< HEAD
 	float value;
 	int flag_bit;
 	int error;
 	int error_next;
 	int set_compare;
-=======
-	int value;
-	int flag_bit;
->>>>>>> 060757c41980402263a3fb6969b7b9499d0be0a9
 };
 struct pid
 {
@@ -175,16 +164,6 @@ struct status
 	uint8_t downlimit[MOTION_COUNT];
 };
 	
-
-struct pid
-{
-	float SetSpeed;   
-	float ActualSpeed;
-	float err;
-	float err_next;
-	float err_last;
-	float Kp,Ki,Kd;
-};
 
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
