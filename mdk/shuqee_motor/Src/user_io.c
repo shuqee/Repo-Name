@@ -3,9 +3,9 @@
 #include "user_io.h"
 
 #define ADC_TH 0x03e8
-#define ADC_BUFF_SIZE 11
+#define ADC_BUFF_SIZE 5
 #define SEAT_COUNT 4
-
+uint8_t counter;
 enum adc_item
 {
 	ADC_ITEM_SEAT1 = 0,
@@ -108,12 +108,21 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 			}
 				
 		}
-		adc_result[i] =adc_buf[5][i];
+		adc_result[i] =adc_buf[2][i];
 	}
 	SAFE(motion[MOTION1].high.now=user_get_adc_height1());
 	SAFE(motion[MOTION2].high.now=user_get_adc_height2());
 	SAFE(motion[MOTION3].high.now=user_get_adc_height3());	
 
+	 counter++;
+	if(counter==3)
+  { 
+		counter=0;
+		motion[MOTION1].pid.pid_flag=1;
+	 motion[MOTION2].pid.pid_flag=1;
+	 motion[MOTION3].pid.pid_flag=1;
+	}	
+	
 	for(i=0; i<SEAT_COUNT; i++)
 	{
 		if(adc_result[i] < ADC_TH)

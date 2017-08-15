@@ -70,12 +70,13 @@
 	/* the environment variable of motion-space*/
 	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
-	#define ENV_SPEED_MAX 96
-	#define ENV_SPEED_MIN 20
+	#define ENV_INC_MAX 96
+	#define ENV_INC_MIN -160
 	#define ENV_SPEED_ACCER 5
 	#define ENV_ACCER     ((uint32_t)4096 / (uint32_t)50)
 	#define x 129.0
 	#define y 550.0
+	#define undulate 300.0
 #endif
 
 /* atomic instructions */
@@ -88,15 +89,15 @@
 struct high
 {
 	/* current height of motion */
-	int now;
+	float now;
 	/* set height of motion */
-	int set;
+	float set;
 /*the compare date for now-set  or  set-now*/
 	float value;
-	int flag_bit;
-	int error;
-	int error_next;
-	int set_compare;
+	float flag_bit;
+	float error;
+	float error_next;
+	float set_compare;
 };
 struct pid
 {
