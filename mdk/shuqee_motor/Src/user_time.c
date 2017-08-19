@@ -12,6 +12,7 @@ void user_time_init(void)
 	HAL_TIM_Base_Start_IT(&htim3);
 }
 
+#ifndef ENV_AIR
 #ifdef ENV_RESET
 /**
   * @brief     Output the pulses without timer.
@@ -140,3 +141,103 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	__HAL_TIM_SET_AUTORELOAD(htim, interval);
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));
 }
+#else
+void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
+{
+	/* current direction of motion */
+	GPIO_PinState sign = GPIO_PIN_RESET;
+	GPIO_PinState dir = motion[index].dir;
+	GPIO_PinState out_dir = GPIO_PIN_RESET;
+	static uint8_t status[MOTION_COUNT] = {0,0,0};
+	uint32_t interval = 999;
+	double pid_out = 0;
+	
+	pid_out = motion[index].pid.out;
+	
+	if (pid_out > 0)
+	{
+		sign = GPIO_PIN_SET;
+	}
+	else if (pid_out < 0)
+	{
+		pid_out = -pid_out;
+		sign = GPIO_PIN_RESET;
+	}
+	else
+	{
+		HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);
+		__HAL_TIM_SET_AUTORELOAD(htim, 999);
+		return;
+	}
+	
+	out_dir = sign;
+	
+	switch(status[index])
+	{
+		case 0:
+			if (dir != sign)
+			{
+				motion[index].dir = sign;
+				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);
+				interval = 99;
+				break;
+			}
+			if (GPIO_PIN_SET == out_dir)
+			{
+				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);
+			}
+			else
+			{
+				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);
+			}
+			status[index]++;
+			interval = 99;
+			break;
+		case 1:
+			HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);
+			/* output pwm done */
+			status[index] = 0;
+			/* step of motion is decrease or increase */
+			interval = (uint32_t)(99.0/pid_out-99.0);
+			break;
+		default:
+			status[index] = 0;
+			break;
+	}
+	interval = (interval>0xffff)?0xffff:interval;
+	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
+	__HAL_TIM_SET_AUTORELOAD(htim, interval);
+}
+
+/**
+  * @brief     Callback function of timer.
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	enum motion_num index;
+	
+	if (htim->Instance == TIM1)
+	{
+		index = MOTION1;
+	}
+	else if (htim->Instance == TIM2)
+	{
+		index = MOTION2;
+	}
+	else if (htim->Instance == TIM3)
+	{
+		index = MOTION3;
+	}
+	else
+	{
+		return;
+	}
+	
+	output_pwm(htim, index);
+}
+#endif

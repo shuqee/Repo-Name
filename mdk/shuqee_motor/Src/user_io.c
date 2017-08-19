@@ -26,6 +26,11 @@ static __IO uint16_t adc_result[ADC_ITEM_COUNT];
 extern ADC_HandleTypeDef hadc1;
 extern DMA_HandleTypeDef hdma_adc1;
 
+#ifdef ENV_AIR
+static void pid_run(enum motion_num index);
+static void pid_init(enum motion_num index);
+#endif
+
 void user_io_init(void)
 {
 	/* close the special-effects */
@@ -135,8 +140,19 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		LED_SEAT4(0);
 	
 	status.seat_num = seat_num_tmp;
+#ifdef ENV_AIR
+	pid_init(MOTION1);
+	pid_init(MOTION2);
+	pid_init(MOTION3);
+#endif
+#ifdef ENV_AIR
+	pid_run(MOTION1);
+	pid_run(MOTION2);
+	pid_run(MOTION3);
+#endif
 }
 
+#ifndef ENV_AIR
 #ifdef ENV_NOSENSOR
 void down_limit(enum motion_num index)
 {
@@ -180,9 +196,11 @@ void up_limit(enum motion_num index)
 		motion[index].high.now = (255+motion[index].config.adj) * ENV_SPACE;
 }
 #endif
+#endif
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+#ifndef ENV_AIR
 	switch(GPIO_Pin)
 	{
 		case EXTI_UPLIMIT1_Pin:
@@ -282,4 +300,44 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		default:
 			break;
 	}
+#else
+	(void)GPIO_Pin;
+#endif
 }
+
+#ifdef ENV_AIR
+static void pid_run(enum motion_num index)
+{
+	int  i_error,d_error;
+	double pid_out = 0;
+	
+	motion[index].pid.set_point = motion[index].high.set;
+	motion[index].high.now = adc_result[ADC_ITEM_HEIGHT1+index];
+	
+	i_error = motion[index].pid.set_point - motion[index].high.now;       //偏差
+    /* 带死区的PID控制 */
+	if (i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
+	{
+		i_error = 0;
+		motion[index].pid.sum_error = 0;
+	}
+	
+	motion[index].pid.sum_error += i_error;       //积分
+	
+    d_error = i_error - motion[index].pid.last_error;     //微分
+	motion[index].pid.last_error = i_error;
+	
+    pid_out = motion[index].pid.proportion * i_error            //比例项
+                  + motion[index].pid.integral * motion[index].pid.sum_error   //积分项
+                  + motion[index].pid.derivative * d_error;        //微分项
+	
+	SAFE(motion[index].pid.out =pid_out);
+}
+
+static void pid_init(enum motion_num index)
+{
+    motion[index].pid.proportion = 0.0001;
+    motion[index].pid.integral = 0.00001;
+    motion[index].pid.derivative = 0;
+}
+#endif

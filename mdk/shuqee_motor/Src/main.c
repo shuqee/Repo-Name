@@ -185,6 +185,7 @@ void find_origin(void)
   * @param  index: the number of the motion.
   * @retval None
   */
+#ifndef ENV_AIR
 void exchange_nup_ndown(enum motion_num index)
 {
 	GPIO_TypeDef * temp_port;
@@ -196,7 +197,7 @@ void exchange_nup_ndown(enum motion_num index)
 	motion[index].io.ndown_port = temp_port;
 	motion[index].io.ndown_pin = temp_pin;
 }
-
+#endif
 /**
   * @brief  Init the motion for the client.
   * @param  None
@@ -204,9 +205,11 @@ void exchange_nup_ndown(enum motion_num index)
   */
 void user_motion_init(void)
 {
+#ifndef ENV_AIR
 	enum motion_num i;
+#endif
 	memset((void *)motion, 0, sizeof(motion));
-	
+#ifndef ENV_AIR
 	motion[MOTION1].io.dir_port = OUTPUT_DIR1_GPIO_Port;
 	motion[MOTION1].io.dir_pin = OUTPUT_DIR1_Pin;
 	motion[MOTION1].io.pul_port = OUTPUT_PUL1_GPIO_Port;
@@ -231,7 +234,22 @@ void user_motion_init(void)
 	motion[MOTION3].io.nup_pin = OUTPUT_NUP3_Pin;
 	motion[MOTION3].io.ndown_port = OUTPUT_NDOWN3_GPIO_Port;
 	motion[MOTION3].io.ndown_pin = OUTPUT_NDOWN3_Pin;
-	
+#else
+	motion[MOTION1].io.up_port = OUTPUT_PUL1_GPIO_Port;
+	motion[MOTION1].io.up_pin = OUTPUT_PUL1_Pin;
+	motion[MOTION1].io.down_port = OUTPUT_DIR1_GPIO_Port;
+	motion[MOTION1].io.down_pin = OUTPUT_DIR1_Pin;
+	motion[MOTION2].io.up_port = OUTPUT_PUL2_GPIO_Port;
+	motion[MOTION2].io.up_pin = OUTPUT_PUL2_Pin;
+	motion[MOTION2].io.down_port = OUTPUT_DIR2_GPIO_Port;
+	motion[MOTION2].io.down_pin = OUTPUT_DIR2_Pin;
+	motion[MOTION3].io.up_port = OUTPUT_PUL3_GPIO_Port;
+	motion[MOTION3].io.up_pin = OUTPUT_PUL3_Pin;
+	motion[MOTION3].io.down_port = OUTPUT_DIR3_GPIO_Port;
+	motion[MOTION3].io.down_pin = OUTPUT_DIR3_Pin;
+#endif
+
+#ifndef ENV_AIR
 	motion[MOTION1].config.dir = MOTION1_CONFIG_DIR;
 	motion[MOTION2].config.dir = MOTION2_CONFIG_DIR;
 	motion[MOTION3].config.dir = MOTION3_CONFIG_DIR;
@@ -256,8 +274,10 @@ void user_motion_init(void)
 #ifdef ENV_RESET
 	find_origin();
 #endif
+#endif
 }
 
+#ifndef ENV_AIR
 #ifdef ENV_NOSENSOR
 /**
   * @brief  Free the limit of down move.
@@ -331,6 +351,7 @@ void free_nup(void)
 	}
 }
 #endif
+#endif
 /* USER CODE END 0 */
 
 int main(void)
@@ -395,8 +416,10 @@ int main(void)
 		status.seat_enable = GET_SEAT_ENABLE();
 		SAFE(status.seat_enable += status.seat_num);
 		SAFE(update = frame.enable);
+#ifndef ENV_AIR
 		SAFE(free_ndown());
 		SAFE(free_nup());
+#endif
 		if (update)
 		{
 			SAFE(frame.enable = 0);
@@ -475,9 +498,15 @@ int main(void)
 		if (!status.seat_enable)
 		{
 			status.spb = 0;
+#ifndef ENV_AIR
 			SAFE(motion[MOTION1].high.set = motion[MOTION1].config.origin * ENV_SPACE);
 			SAFE(motion[MOTION2].high.set = motion[MOTION2].config.origin * ENV_SPACE);
 			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
+#else
+			SAFE(motion[MOTION1].high.set = 0);
+			SAFE(motion[MOTION2].high.set = 0);
+			SAFE(motion[MOTION3].high.set = 0);
+#endif
 		}
 		/* update the special effects into io */
 		SPB3(status.spb&(1<<2));

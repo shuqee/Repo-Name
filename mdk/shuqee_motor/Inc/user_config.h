@@ -7,9 +7,11 @@
 /* #define DEBUG_ENV */
 
 /* three degrees of freedom platform  */
-#define ENV_3DOF
+/* #define ENV_3DOF */
 /* two degrees of freedom platform  */
 /* #define ENV_2DOF */
+
+#define ENV_AIR
 
 #ifdef ENV_3DOF
     /* without sensor */
@@ -29,7 +31,7 @@
 	#define ENV_SPACE 46
 	/* the reload value of timer when speed is in max */
 	#define ENV_SPEED_MAX 37
-	#define ENV_ACCER     (ENV_SPACE * (uint32_t)255 * (uint32_t)20)
+	#define ENV_ACCER     (ENV_SPACE * (uint32_t)256 * (uint32_t)20)
 #endif
 
 #ifdef ENV_2DOF
@@ -48,7 +50,27 @@
 	#define ENV_SPACE 25
 	/* the reload value of timer when speed is in max */
 	#define ENV_SPEED_MAX 37
-	#define ENV_ACCER     (ENV_SPACE * (uint32_t)255 * (uint32_t)20)
+	#define ENV_ACCER     (ENV_SPACE * (uint32_t)256 * (uint32_t)20)
+#endif
+
+#ifdef ENV_AIR
+    /* need to reset the platform */
+	#define MOTION1_CONFIG_DIR	GPIO_PIN_RESET
+	#define MOTION2_CONFIG_DIR	GPIO_PIN_RESET
+	#define MOTION3_CONFIG_DIR	GPIO_PIN_RESET
+	#define MOTION1_CONFIG_ORIGIN	0
+	#define MOTION2_CONFIG_ORIGIN	0
+	#define MOTION3_CONFIG_ORIGIN	0
+	#define MOTION1_CONFIG_ADJ		0
+	#define MOTION2_CONFIG_ADJ		0
+	#define MOTION3_CONFIG_ADJ		0
+	/* the environment variable of motion-space*/
+	#define ENV_SPACE 16
+	/* the reload value of timer when speed is in max */
+	#define ENV_SPEED_MAX 96
+	#define ENV_SPEED_MIN 20
+	#define ENV_SPEED_ACCER 5
+	#define ENV_ACCER     (ENV_SPACE * (uint32_t)256 * (uint32_t)20)
 #endif
 
 /* atomic instructions */
@@ -74,6 +96,7 @@ enum motion_num
 	MOTION_COUNT
 };
 
+#ifndef ENV_AIR
 struct motion_io
 {
 	GPIO_TypeDef *	dir_port;
@@ -120,6 +143,50 @@ struct status
 	uint8_t uplimit[MOTION_COUNT];
 	uint8_t downlimit[MOTION_COUNT];
 };
+#else
+struct motion_io
+{
+	GPIO_TypeDef *	up_port;
+	uint16_t				up_pin;	
+	GPIO_TypeDef *	down_port;
+	uint16_t				down_pin;	
+};
+
+struct motion_pid
+{
+	int set_point;     //设定目标 Desired Value
+    long sum_error;                //误差累计
+    double  proportion;         //比例常数 Proportional Cons
+    double  integral;           //积分常数 Integral Const
+    double  derivative;         //微分常数 Derivative Const
+    int last_error;               //Error[-1]
+    int prev_error;               //Error[-2]
+    double out;                  //输出控制量
+};
+
+struct motion_status
+{
+	/* number of motion */
+	enum motion_num index;
+	struct high high;	
+	/* current direction of motion */
+	GPIO_PinState dir;
+	struct motion_io io;
+	struct motion_pid pid;
+};
+
+struct status
+{
+	/* the seat number */
+	uint8_t id;
+	/* sum of the seat who has be sitting  */
+	uint8_t seat_num;
+	/* flag of enable-seat; platform can move only when (seat_num||seat_enable == true) */
+	uint8_t seat_enable;
+	/* special effects of seat*/
+	uint8_t spb;
+};
+#endif
 
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
