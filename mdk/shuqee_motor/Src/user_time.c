@@ -2,6 +2,7 @@
 #include "user_config.h"
 #include "user_time.h"
 
+double pid_test;
 void user_time_init(void)
 {
 	__HAL_TIM_SET_AUTORELOAD(&htim1, 999);
@@ -56,6 +57,7 @@ void set_pul(enum motion_num index, GPIO_PinState dir, uint16_t interval, uint32
   * @param  sign: set direction of motion.
   * @retval   int: step of motion.
   */
+
 int output_pul(enum motion_num index, GPIO_PinState sign)
 {
 	/* current direction of motion */
@@ -203,7 +205,10 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 			/* output pwm done */
 			status[index] = 0;
 			/* step of motion is decrease or increase */
-			interval = (uint32_t)(99.0/pid_out-99.0);
+//			interval = (uint32_t)(999.0/pid_out-999.0);
+//		if(pid_out>=190)  pid_out=190;    		  ¡¢¡¢%62.5-%76
+		pid_test=pid_out;
+		   	interval = (uint32_t)(600.0-pid_out);
 			break;
 		default:
 			status[index] = 0;

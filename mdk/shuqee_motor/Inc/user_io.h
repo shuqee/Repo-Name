@@ -16,6 +16,8 @@
 	HAL_GPIO_TogglePin(OUTPUT_LED1_GPIO_Port, OUTPUT_LED1_Pin); \
 }while(0)
 
+#define SPB1(x) HAL_GPIO_WritePin(OUTPUT_SP1_GPIO_Port, OUTPUT_SP1_Pin, (GPIO_PinState)(!(x)))
+#define SPB2(x) HAL_GPIO_WritePin(OUTPUT_SP2_GPIO_Port, OUTPUT_SP2_Pin, (GPIO_PinState)(!(x)))
 #define SPB3(x) HAL_GPIO_WritePin(OUTPUT_SP3_GPIO_Port, OUTPUT_SP3_Pin, (GPIO_PinState)(!(x)))
 #define SPB4(x) HAL_GPIO_WritePin(OUTPUT_SP4_GPIO_Port, OUTPUT_SP4_Pin, (GPIO_PinState)(!(x)))
 #define SPB5(x) HAL_GPIO_WritePin(OUTPUT_SP5_GPIO_Port, OUTPUT_SP5_Pin, (GPIO_PinState)(!(x)))

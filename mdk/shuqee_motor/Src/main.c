@@ -509,6 +509,8 @@ int main(void)
 #endif
 		}
 		/* update the special effects into io */
+		SPB1(status.spb&(1<<0));
+		SPB2(status.spb&(1<<1));
 		SPB3(status.spb&(1<<2));
 		SPB4(status.spb&(1<<3));
 		SPB5(status.spb&(1<<4));

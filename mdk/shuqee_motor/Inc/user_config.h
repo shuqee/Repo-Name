@@ -68,7 +68,7 @@
 	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
 	#define ENV_SPEED_MAX 96
-	#define ENV_SPEED_MIN 20
+	#define ENV_SPEED_MIN 459
 	#define ENV_SPEED_ACCER 5
 	#define ENV_ACCER     (ENV_SPACE * (uint32_t)256 * (uint32_t)20)
 #endif
