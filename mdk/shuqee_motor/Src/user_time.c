@@ -208,6 +208,7 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 //			interval = (uint32_t)(999.0/pid_out-999.0);
 //		if(pid_out>=190)  pid_out=190;    		  ¡¢¡¢%62.5-%76
 		pid_test=pid_out;
+		pid_out = (pid_out>200)?200:pid_out;
 		   	interval = (uint32_t)(600.0-pid_out);
 			break;
 		default:

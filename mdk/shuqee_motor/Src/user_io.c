@@ -351,7 +351,7 @@ static void pid_run(enum motion_num index)
 static void pid_init(enum motion_num index)
 {
     motion[index].pid.proportion =0.066;  //0.036 ,0.042  //0.00002
-    motion[index].pid.integral = 0.00001;  //0.00001;        //0.00001
+    motion[index].pid.integral = 0;  //0.00001;        //0.00001
     motion[index].pid.derivative = 0.01;//0.01;           //0.00002
 }
 #endif
