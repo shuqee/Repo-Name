@@ -5,7 +5,7 @@
 #define ADC_TH 0x03e8
 #define ADC_BUFF_SIZE 5
 #define SEAT_COUNT 4
-uint8_t count;
+
 enum adc_item
 {
 	ADC_ITEM_SEAT1 = 0,
@@ -134,22 +134,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	pid_init(MOTION3);
 #endif
 #ifdef ENV_AIR
-<<<<<<< Updated upstream
-	count++;
-	if(count>=2)
-	{	pid_run(MOTION1);
-		pid_run(MOTION2);
-		pid_run(MOTION3);
-		count=0;
-	}	
-=======
 if(!mask_pid)     
 {	
 	pid_run(MOTION1);
 	pid_run(MOTION2);
 	pid_run(MOTION3);
 }
->>>>>>> Stashed changes
 #endif
 }
 
@@ -346,37 +336,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 int mark_error;
 static void pid_run(enum motion_num index)
 {
-	int  i_error,d_error,mark_error;
+	int  i_error,d_error;
 	double pid_out = 0;
 
 	motion[index].high.now = adc_result[ADC_ITEM_HEIGHT1+index];
 	motion[index].pid.set_point = motion[index].high.set;
-<<<<<<< Updated upstream
-	/**/
-	if(motion[index].pid.set_point>motion[index].high.now)
-		i_error=motion[index].high.set-400;	//////////////////////   为了让速度到达死区前速度为零，消除停止时的顿挫感；
-	else if(motion[index].pid.set_point<motion[index].high.now)
-	 i_error=motion[index].high.set+400;
-	if(i_error<=0)  i_error=400;	///////////////
-	/**/
-	
-	mark_error = motion[index].pid.set_point - motion[index].high.now;      /////////////////////////
-	i_error = i_error - motion[index].high.now;       //偏差
-=======
 		
 	i_error = motion[index].pid.set_point  - motion[index].high.now;       //偏差
 //	if(i_error<0)   motion[index].pid.proportion =0.0001;   //判断气缸是否下行，执行下行减速P；
->>>>>>> Stashed changes
     /* 带死区的PID控制 */
-	if (mark_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
+	if (i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
 	{
 		i_error = 0;
-<<<<<<< Updated upstream
-		motion[index].pid.sum_error = 0;
-		
-=======
 		motion[index].pid.sum_error = 0;		
->>>>>>> Stashed changes
 		motion[index].pid.last_error=0;
 	}
 	
@@ -395,14 +367,8 @@ static void pid_run(enum motion_num index)
 
 static void pid_init(enum motion_num index)
 {
-<<<<<<< Updated upstream
-    motion[index].pid.proportion =0.066;  //0.036 ,0.042  //0.00002
-    motion[index].pid.integral = 0;  //0.00001;        //0.00001
-    motion[index].pid.derivative = 0.01;//0.01;           //0.00002
-=======
     motion[index].pid.proportion =0.2;  
     motion[index].pid.integral = 0;//0.00001;  
     motion[index].pid.derivative = 0;//0.01;
->>>>>>> Stashed changes
 }
 #endif

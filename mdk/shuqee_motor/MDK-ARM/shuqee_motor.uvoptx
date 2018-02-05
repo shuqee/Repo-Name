@@ -143,13 +143,8 @@
       <TargetDriverDllRegistry>
         <SetRegEntry>
           <Number>0</Number>
-<<<<<<< Updated upstream
-          <Key>DLGDARM</Key>
-          <Name>(1010=-1,-1,-1,-1,0)(1007=-1,-1,-1,-1,0)(1008=-1,-1,-1,-1,0)(1009=-1,-1,-1,-1,0)</Name>
-=======
           <Key>DLGUARM</Key>
           <Name>(105=-1,-1,-1,-1,0)</Name>
->>>>>>> Stashed changes
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -164,16 +159,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>ARMDBGFLAGS</Key>
-<<<<<<< Updated upstream
-          <Name>-T0</Name>
-        </SetRegEntry>
-        <SetRegEntry>
-          <Number>0</Number>
-          <Key>DLGUARM</Key>
-          <Name>(105=-1,-1,-1,-1,0)</Name>
-=======
           <Name></Name>
->>>>>>> Stashed changes
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -183,50 +169,19 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>ST-LINKIII-KEIL_SWO</Key>
-<<<<<<< Updated upstream
-          <Name>-U53FF6E066782544822360167 -I0 -O10446 -S1 -C0 -A0 -N00("ARM CoreSight SW-DP") -D00(1BA01477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8004 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20000000 -FC800 -FN1 -FF0STM32F10x_512.FLM -FS08000000 -FL080000 -FP0($$Device:STM32F103VE$Flash\STM32F10x_512.FLM)</Name>
-        </SetRegEntry>
-      </TargetDriverDllRegistry>
-      <Breakpoint>
-        <Bp>
-          <Number>0</Number>
-          <Type>0</Type>
-          <LineNumber>303</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134224994</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>F:\github\绉绘PID绠楁硶2017-10-20\Repo-Name\mdk\shuqee_motor\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_rcc.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
-        </Bp>
-      </Breakpoint>
-=======
           <Name>-U57FF6B064883535250250887 -I0 -O10446 -S1 -C0 -A0 -N00("ARM CoreSight SW-DP") -D00(1BA01477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20000000 -FC800 -FN1 -FF0STM32F10x_512.FLM -FS08000000 -FL080000 -FP0($$Device:STM32F103VE$Flash\STM32F10x_512.FLM)</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
       <Breakpoint/>
->>>>>>> Stashed changes
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-<<<<<<< Updated upstream
-          <ItemText>interval</ItemText>
-=======
           <ItemText>mark_error,0x0A</ItemText>
->>>>>>> Stashed changes
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-<<<<<<< Updated upstream
-          <ItemText>pid_test</ItemText>
-=======
           <ItemText>up_loop</ItemText>
         </Ww>
         <Ww>
@@ -243,7 +198,6 @@
           <count>4</count>
           <WinNumber>1</WinNumber>
           <ItemText>mask_pid,0x0A</ItemText>
->>>>>>> Stashed changes
         </Ww>
       </WatchWindow1>
       <Tracepoint>
