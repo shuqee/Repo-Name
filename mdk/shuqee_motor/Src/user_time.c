@@ -2,7 +2,6 @@
 #include "user_config.h"
 #include "user_time.h"
 
-double pid_test;
 void user_time_init(void)
 {
 	__HAL_TIM_SET_AUTORELOAD(&htim1, 999);
@@ -57,7 +56,6 @@ void set_pul(enum motion_num index, GPIO_PinState dir, uint16_t interval, uint32
   * @param  sign: set direction of motion.
   * @retval   int: step of motion.
   */
-
 int output_pul(enum motion_num index, GPIO_PinState sign)
 {
 	/* current direction of motion */
@@ -189,12 +187,12 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 			if (GPIO_PIN_SET == out_dir)
 			{
 				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);  //上行
 			}
 			else
 			{
 				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);//下行
 			}
 			status[index]++;
 			interval = 99;
@@ -205,12 +203,17 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 			/* output pwm done */
 			status[index] = 0;
 			/* step of motion is decrease or increase */
-//			interval = (uint32_t)(999.0/pid_out-999.0);
-//		if(pid_out>=190)  pid_out=190;    		  、、%62.5-%76
-		pid_test=pid_out;
-		pid_out = (pid_out>200)?200:pid_out;
-		   	interval = (uint32_t)(600.0-pid_out);
-			break;
+//			interval = (uint32_t)(99.0/pid_out-99.0);
+//		 interval = (uint32_t)(600.0-pid_out);
+			if (GPIO_PIN_SET == out_dir)
+			{       
+				interval = (uint32_t)(motion[index].min_begin.up_origin-pid_out);       //上开度
+			}
+			else
+			{
+         interval = (uint32_t)(motion[index].min_begin.down_origin-pid_out);   //下开度
+			}
+		 	break;
 		default:
 			status[index] = 0;
 			break;
@@ -220,6 +223,19 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 	__HAL_TIM_SET_AUTORELOAD(htim, interval);
 }
 
+void orign_pwm(TIM_HandleTypeDef *htim,enum motion_num index)
+{
+	if(up_loop)//上行
+	{
+		HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);  //上行	
+	}
+  if(down_loop)//下行	
+	{
+		HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);//下行	
+	}
+}
 /**
   * @brief     Callback function of timer.
   */
@@ -243,7 +259,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		return;
 	}
-	
+	if(!mask_pid)  
 	output_pwm(htim, index);
+	else
+	orign_pwm(htim,index);
 }
 #endif

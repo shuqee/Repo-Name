@@ -18,7 +18,8 @@ enum adc_item
 	ADC_ITEM_COUNT
 };
 
-extern int flag_rst;
+extern  int flag_rst;
+extern  uint8_t mask_pid;
 
 static __IO uint16_t adc_buf[ADC_BUFF_SIZE][ADC_ITEM_COUNT];
 static __IO uint16_t adc_result[ADC_ITEM_COUNT];
@@ -34,6 +35,8 @@ static void pid_init(enum motion_num index);
 void user_io_init(void)
 {
 	/* close the special-effects */
+	HAL_GPIO_WritePin(OUTPUT_SP1_GPIO_Port, OUTPUT_SP1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(OUTPUT_SP2_GPIO_Port, OUTPUT_SP2_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_SP3_GPIO_Port, OUTPUT_SP3_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_SP4_GPIO_Port, OUTPUT_SP4_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_SP5_GPIO_Port, OUTPUT_SP5_Pin, GPIO_PIN_SET);
@@ -43,25 +46,9 @@ void user_io_init(void)
 	
 	/* enable the output of 74HC573D */
 	HAL_GPIO_WritePin(OUTPUT_573LE1_GPIO_Port, OUTPUT_573LE1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_573LE2_GPIO_Port, OUTPUT_573LE2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_573LE3_GPIO_Port, OUTPUT_573LE3_Pin, GPIO_PIN_SET);
-	
+	HAL_GPIO_WritePin(OUTPUT_573LE2_GPIO_Port, OUTPUT_573LE2_Pin, GPIO_PIN_SET);	
 	/* set the io of 485 into the "receive data" mode */
 	HAL_GPIO_WritePin(OUTPUT_485RW_GPIO_Port, OUTPUT_485RW_Pin, GPIO_PIN_SET);
-	
-	/* allowed to move up */
-	HAL_GPIO_WritePin(OUTPUT_NUP1_GPIO_Port, OUTPUT_NUP1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_NUP2_GPIO_Port, OUTPUT_NUP2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_NUP3_GPIO_Port, OUTPUT_NUP3_Pin, GPIO_PIN_SET);
-	/* allowed to move down */
-	HAL_GPIO_WritePin(OUTPUT_NDOWN1_GPIO_Port, OUTPUT_NDOWN1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_NDOWN2_GPIO_Port, OUTPUT_NDOWN2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_NDOWN3_GPIO_Port, OUTPUT_NDOWN3_Pin, GPIO_PIN_SET);
-	
-	/* clean the warning */
-	HAL_GPIO_WritePin(OUTPUT_CLR1_GPIO_Port, OUTPUT_CLR1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_CLR2_GPIO_Port, OUTPUT_CLR2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(OUTPUT_CLR3_GPIO_Port, OUTPUT_CLR3_Pin, GPIO_PIN_SET);
 	
 	HAL_ADCEx_Calibration_Start(&hadc1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buf, ADC_BUFF_SIZE*ADC_ITEM_COUNT);
@@ -134,10 +121,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	else
 		LED_SEAT3(0);
 	
-	if(delay_count[3])
-		LED_SEAT4(1);
-	else
-		LED_SEAT4(0);
+//	if(delay_count[3])
+//		LED_SEAT4(1);
+//	else
+//		LED_SEAT4(0);
+//	HAL_GPIO_TogglePin(OUTPUT_SEATLED4_GPIO_Port, OUTPUT_SEATLED4_Pin);
 	
 	status.seat_num = seat_num_tmp;
 #ifdef ENV_AIR
@@ -146,6 +134,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	pid_init(MOTION3);
 #endif
 #ifdef ENV_AIR
+<<<<<<< Updated upstream
 	count++;
 	if(count>=2)
 	{	pid_run(MOTION1);
@@ -153,6 +142,14 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		pid_run(MOTION3);
 		count=0;
 	}	
+=======
+if(!mask_pid)     
+{	
+	pid_run(MOTION1);
+	pid_run(MOTION2);
+	pid_run(MOTION3);
+}
+>>>>>>> Stashed changes
 #endif
 }
 
@@ -309,7 +306,44 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #endif
 }
 
+//#ifdef ENV_AIR
+//static void pid_run(enum motion_num index)
+//{
+//	int  i_error,d_error;
+//	double pid_out = 0;
+//	
+//	motion[index].pid.set_point = motion[index].high.set;
+//	motion[index].high.now = adc_result[ADC_ITEM_HEIGHT1+index];
+//	
+//	i_error = motion[index].pid.set_point - motion[index].high.now;       //偏差
+//    /* 带死区的PID控制 */
+//	if (i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
+//	{
+//		i_error = 0;
+//		motion[index].pid.sum_error = 0;
+//	}
+//	
+//	motion[index].pid.sum_error += i_error;       //积分
+//	
+//    d_error = i_error - motion[index].pid.last_error;     //微分
+//	motion[index].pid.last_error = i_error;
+//	
+//    pid_out = motion[index].pid.proportion * i_error            //比例项
+//                  + motion[index].pid.integral * motion[index].pid.sum_error   //积分项
+//                  + motion[index].pid.derivative * d_error;        //微分项
+//	
+//	SAFE(motion[index].pid.out =pid_out);
+//}
+
+//static void pid_init(enum motion_num index)
+//{
+//    motion[index].pid.proportion = 0.0001;
+//    motion[index].pid.integral = 0;     //0.00001; 
+//    motion[index].pid.derivative = 0;//0.00015;
+//}
+//#endif
 #ifdef ENV_AIR
+int mark_error;
 static void pid_run(enum motion_num index)
 {
 	int  i_error,d_error,mark_error;
@@ -317,6 +351,7 @@ static void pid_run(enum motion_num index)
 
 	motion[index].high.now = adc_result[ADC_ITEM_HEIGHT1+index];
 	motion[index].pid.set_point = motion[index].high.set;
+<<<<<<< Updated upstream
 	/**/
 	if(motion[index].pid.set_point>motion[index].high.now)
 		i_error=motion[index].high.set-400;	//////////////////////   为了让速度到达死区前速度为零，消除停止时的顿挫感；
@@ -327,12 +362,21 @@ static void pid_run(enum motion_num index)
 	
 	mark_error = motion[index].pid.set_point - motion[index].high.now;      /////////////////////////
 	i_error = i_error - motion[index].high.now;       //偏差
+=======
+		
+	i_error = motion[index].pid.set_point  - motion[index].high.now;       //偏差
+//	if(i_error<0)   motion[index].pid.proportion =0.0001;   //判断气缸是否下行，执行下行减速P；
+>>>>>>> Stashed changes
     /* 带死区的PID控制 */
 	if (mark_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
 	{
 		i_error = 0;
+<<<<<<< Updated upstream
 		motion[index].pid.sum_error = 0;
 		
+=======
+		motion[index].pid.sum_error = 0;		
+>>>>>>> Stashed changes
 		motion[index].pid.last_error=0;
 	}
 	
@@ -346,12 +390,19 @@ static void pid_run(enum motion_num index)
                   + motion[index].pid.derivative * d_error;        //微分项
 	
 	SAFE(motion[index].pid.out =pid_out);
+	if(index==1)  mark_error=pid_out;   //THE TEST MOTION 2;
 }
 
 static void pid_init(enum motion_num index)
 {
+<<<<<<< Updated upstream
     motion[index].pid.proportion =0.066;  //0.036 ,0.042  //0.00002
     motion[index].pid.integral = 0;  //0.00001;        //0.00001
     motion[index].pid.derivative = 0.01;//0.01;           //0.00002
+=======
+    motion[index].pid.proportion =0.2;  
+    motion[index].pid.integral = 0;//0.00001;  
+    motion[index].pid.derivative = 0;//0.01;
+>>>>>>> Stashed changes
 }
 #endif

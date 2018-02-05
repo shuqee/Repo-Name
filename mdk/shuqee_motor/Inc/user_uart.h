@@ -16,5 +16,6 @@ struct frame
 extern struct frame frame;
 
 extern void user_uart_init(void);
+extern void user_send_debug_info(void);
 
 #endif /* __USER_UART_H */

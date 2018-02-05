@@ -152,6 +152,7 @@ struct motion_io
 	uint16_t				down_pin;	
 };
 
+
 struct motion_pid
 {
 	int set_point;     //设定目标 Desired Value
@@ -163,7 +164,11 @@ struct motion_pid
     int prev_error;               //Error[-2]
     double out;                  //输出控制量
 };
-
+struct motion_min_begin
+{
+	int up_origin;
+	int down_origin;
+};	
 struct motion_status
 {
 	/* number of motion */
@@ -173,6 +178,7 @@ struct motion_status
 	GPIO_PinState dir;
 	struct motion_io io;
 	struct motion_pid pid;
+	struct motion_min_begin min_begin;
 };
 
 struct status
@@ -194,5 +200,4 @@ extern TIM_HandleTypeDef htim3;
 
 extern struct motion_status motion[MOTION_COUNT];
 extern struct status status;
-
 #endif /* __USER_CONFIG_H */

@@ -3,6 +3,11 @@
   * File Name          : main.c
   * Description        : Main program body
   ******************************************************************************
+  ** This notice applies to any and all portions of this file
+  * that are not between comment pairs USER CODE BEGIN and
+  * USER CODE END. Other portions of this file, whether 
+  * inserted by the user or by software development tools
+  * are owned by their respective copyright owners.
   *
   * COPYRIGHT(c) 2017 STMicroelectronics
   *
@@ -30,12 +35,13 @@
   *
   ******************************************************************************
   */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-#include "user_config.h"
+#include "user_config.h" 
 #include "user_io.h"
 #include "user_time.h"
 #include "user_uart.h"
@@ -53,17 +59,19 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 struct motion_status motion[MOTION_COUNT] = {MOTION1};
 struct status status = {0};
 int flag_rst = 0;	//reset flag
+uint8_t up_loop=0,down_loop=0;
+uint8_t mask_pid=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
@@ -72,10 +80,13 @@ static void MX_IWDG_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+extern uint16_t user_get_adc_height1(void);
+extern uint16_t user_get_adc_height2(void);
+extern uint16_t user_get_adc_height3(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -119,6 +130,7 @@ void delay_ms(uint32_t times)
 }
 
 #ifdef ENV_RESET
+
 /**
   * @brief  Reset the platform,set every motion into the origin.
   * @param  None
@@ -130,7 +142,7 @@ void find_origin(void)
 	int def_high[MOTION_COUNT] = {0};
 	for(i=MOTION1; i<MOTION_COUNT; i++)
 	{
-		/* bit0ã€bit1ã€bit2 for 1ã€2ã€3 motionï¼›not resetï¼š1ï¼›resetï¼š0. */
+		/* bit0ã€bit1ã€bit2 for 1ã€?2ã€?3 motionï¼›not resetï¼?1ï¼›resetï¼?0. */
 		flag_rst |= 1<<i;
 	}
 	/* at least one motion is not reset, do while */
@@ -142,7 +154,7 @@ void find_origin(void)
 			if((flag_rst&(1<<i)) != 0)
 			{
 				/* i motion is not in the lowest point */
-				if(def_high[i] == 0 && status.downlimit[i] == 0)
+		 		if(def_high[i] == 0 && status.downlimit[i] == 0)
 				{
 					/* move down */
 					set_pul(i, (GPIO_PinState)1, 200, 1);
@@ -272,7 +284,7 @@ void user_motion_init(void)
 		}
 	}
 #ifdef ENV_RESET
-	find_origin();
+	find_origin();	
 #endif
 #endif
 }
@@ -352,6 +364,180 @@ void free_nup(void)
 }
 #endif
 #endif
+#ifdef ENV_AIR
+void find_air_origin(void)
+{
+	   static enum motion_num air;
+	  	SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
+			SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
+			SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);  //ÉèÖÃ³õÊ¼µÄÆø¸×µÄÆðÊ¼Î»ÖÃÎªMOTION1_CONFIG_ORIGIN£»Áã
+      SAFE(motion[MOTION1].min_begin.up_origin=600);
+			SAFE(motion[MOTION2].min_begin.up_origin=600);
+			SAFE(motion[MOTION3].min_begin.up_origin=600);
+			SAFE(motion[MOTION1].min_begin.down_origin=600);
+			SAFE(motion[MOTION2].min_begin.down_origin=600);
+			SAFE(motion[MOTION3].min_begin.down_origin=600);  //ÏÈÉèÖÃÏßÈ¦ÔÚÒ»¸ö±È½ÏÊÊºÏµÄ¿ªÊ¼¶ÈÉÏ½øÐÐÏÂÐÐ²Ù×÷£¬È·±£Î»ÖÃÔÚ×îµÍÏÂ£»
+	    HAL_Delay(500);
+	    /*µÈ´ýALLÆø¸×µ½´ï×îµÍµã*/
+	    while(!((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE ))){}
+	    /*Æø¶¯×Ô¶¯¼ì²â³ÌÐò*/
+			mask_pid=1;
+      SAFE(motion[MOTION1].min_begin.up_origin=1000);
+			SAFE(motion[MOTION2].min_begin.up_origin=1000);
+			SAFE(motion[MOTION3].min_begin.up_origin=1000);
+			SAFE(motion[MOTION1].min_begin.down_origin=1000);
+			SAFE(motion[MOTION2].min_begin.down_origin=1000);
+			SAFE(motion[MOTION3].min_begin.down_origin=1000);  //ÏÈÉèÖÃPWMÔÚÒ»¸öÈ«²¿ÏßÈ¦¶¼²»¶¯×÷µÄ³õÊ¼Î»ÖÃ£»  
+				
+			/*Ö´ÐÐÈ«²¿ÉÏÐÐ*/
+				/*up_loop----bit1-->motion 1,bit2-->motion 2,bit3-->motion 3*/
+		 	for(air=MOTION1; air<MOTION_COUNT; air++)
+	    {
+					up_loop |= 1<<air;
+	    }
+			    up_loop|=1<<air;
+			while(up_loop)  //ÉÏÐÐ±êÖ¾Î»£»
+			{
+				for(air=MOTION1; air<MOTION_COUNT; air++)
+				{
+				    if((up_loop&(1<<air))!=0)//motion air bit checkl  0-->reset,1-->non reset;
+						{				
+							  delay_us(180);
+							  switch(air)
+								{
+									case MOTION1:  if(user_get_adc_height1()>28*ENV_SPACE)  //ÅÐ¶ÏÈç¹û¸ß¶ÈÓÐ±ä»¯£¬CLRÎ»£»
+																	{
+																		 up_loop&=~(1<<air);																		
+																	}
+																	else
+																	{
+																		motion[MOTION1].min_begin.up_origin--;
+																		__HAL_TIM_SET_AUTORELOAD(&htim1, motion[MOTION1].min_begin.up_origin);
+																	}
+																	break;
+									case MOTION2:if(user_get_adc_height2()>28*ENV_SPACE)  //ÅÐ¶ÏÈç¹û¸ß¶ÈÓÐ±ä»¯£¬CLRÎ»£»
+																	{
+																		 up_loop&=~(1<<air);																		
+																	}
+																	else
+																	{
+																		motion[MOTION2].min_begin.up_origin--;
+																		__HAL_TIM_SET_AUTORELOAD(&htim2, motion[MOTION2].min_begin.up_origin);
+																	}
+																	break;																		
+									case MOTION3:if(user_get_adc_height3()>28*ENV_SPACE)  //ÅÐ¶ÏÈç¹û¸ß¶ÈÓÐ±ä»¯£¬CLRÎ»£»
+																	{
+																		 up_loop&=~(1<<air);																		
+																	}
+																	else
+																	{
+																		motion[MOTION3].min_begin.up_origin--;
+																		__HAL_TIM_SET_AUTORELOAD(&htim3, motion[MOTION3].min_begin.up_origin);
+																	}
+																	break;
+										
+									default: break;
+										
+								}		
+						}	
+					if(user_get_adc_height1()>=4096-25*ENV_SPACE )
+						{
+							HAL_GPIO_WritePin(motion[0].io.up_port, motion[0].io.up_pin, GPIO_PIN_SET);
+							HAL_GPIO_WritePin(motion[0].io.down_port, motion[0].io.down_pin, GPIO_PIN_SET);							 
+						}  	
+          else if(user_get_adc_height2()>=4096-25*ENV_SPACE )		
+					{
+							HAL_GPIO_WritePin(motion[1].io.up_port, motion[1].io.up_pin, GPIO_PIN_SET);
+							HAL_GPIO_WritePin(motion[1].io.down_port, motion[1].io.down_pin, GPIO_PIN_SET);									
+					}		
+          else if (user_get_adc_height3()>=4096-25*ENV_SPACE )	
+					{
+							HAL_GPIO_WritePin(motion[2].io.up_port, motion[2].io.up_pin, GPIO_PIN_SET);
+							HAL_GPIO_WritePin(motion[2].io.down_port, motion[2].io.down_pin, GPIO_PIN_SET);									
+					}							
+				}
+			/*µÈ´ýÆø¸×È«²¿È¥µ½×î¸ßµã*/
+		if(((user_get_adc_height1()>=4096-25*ENV_SPACE )&&(user_get_adc_height2()>=4096-25*ENV_SPACE )&&(user_get_adc_height3()>=4096-25*ENV_SPACE )))
+			{
+				 up_loop&=~(1<<3);
+			}
+		}	
+				
+      HAL_Delay(500);				
+			/*Ö´ÐÐÈ«²¿ÏÂÐÐ*/
+		for(air=MOTION1; air<MOTION_COUNT; air++)
+	    {
+					down_loop |= 1<<air;
+	    }
+			    down_loop|=1<<air;
+			while(down_loop)  //ÉÏÐÐ±êÖ¾Î»£»
+			{
+				for(air=MOTION1; air<MOTION_COUNT; air++)
+				{
+				    if((down_loop&(1<<air))!=0)//motion air bit checkl  0-->reset,1-->non reset;
+						{				
+							  delay_us(180);
+							  switch(air)
+								{
+									case MOTION1:  if(user_get_adc_height1()<=(4096-28*ENV_SPACE))  //ÅÐ¶ÏÈç¹û¸ß¶ÈÓÐ±ä»¯£¬CLRÎ»£»
+																	{
+																		 down_loop&=~(1<<air);																		
+																	}
+																	else
+																	{
+																		motion[MOTION1].min_begin.down_origin--;
+																		__HAL_TIM_SET_AUTORELOAD(&htim1,motion[MOTION1].min_begin.down_origin);
+																	}
+																	break;
+									case MOTION2:if(user_get_adc_height2()<=(4096-28*ENV_SPACE))  //ÅÐ¶ÏÈç¹û¸ß¶ÈÓÐ±ä»¯£¬CLRÎ»£»
+																	{
+																		 down_loop&=~(1<<air);																		
+																	}
+																	else
+																	{
+																		motion[MOTION2].min_begin.down_origin--;
+																		__HAL_TIM_SET_AUTORELOAD(&htim2,motion[MOTION2].min_begin.down_origin);
+																	}
+																	break;																		
+									case MOTION3:if(user_get_adc_height3()<=(4096-28*ENV_SPACE))  //ÅÐ¶ÏÈç¹û¸ß¶ÈÓÐ±ä»¯£¬CLRÎ»£»
+																	{
+																		 down_loop&=~(1<<air);																		
+																	}
+																	else
+																	{
+																		motion[MOTION3].min_begin.down_origin--;
+																		__HAL_TIM_SET_AUTORELOAD(&htim3,motion[MOTION3].min_begin.down_origin);
+																	}
+																	break;										
+									default: break;										
+								}		
+						}						
+					if(user_get_adc_height1()<=25*ENV_SPACE)
+						{
+							HAL_GPIO_WritePin(motion[0].io.up_port, motion[0].io.up_pin, GPIO_PIN_SET);
+							HAL_GPIO_WritePin(motion[0].io.down_port, motion[0].io.down_pin, GPIO_PIN_SET);							 
+						}  	
+          else if(user_get_adc_height2()<=25*ENV_SPACE)		
+					{
+							HAL_GPIO_WritePin(motion[1].io.up_port, motion[1].io.up_pin, GPIO_PIN_SET);
+							HAL_GPIO_WritePin(motion[1].io.down_port, motion[1].io.down_pin, GPIO_PIN_SET);									
+					}		
+          else if (user_get_adc_height3()<=25*ENV_SPACE )	
+					{
+							HAL_GPIO_WritePin(motion[2].io.up_port, motion[2].io.up_pin, GPIO_PIN_SET);
+							HAL_GPIO_WritePin(motion[2].io.down_port, motion[2].io.down_pin, GPIO_PIN_SET);									
+					}							
+				}
+			/*µÈ´ýÆø¸×È«²¿È¥µ½×îµÍµã*/
+			if(((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE )))
+			{
+				  down_loop&=~(1<<3);
+			}				
+		}	 
+
+			mask_pid=0;
+}
+#endif
 /* USER CODE END 0 */
 
 int main(void)
@@ -374,8 +560,16 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
   /* Configure the system clock */
   SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -386,6 +580,7 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -398,15 +593,18 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-  	led_count = 0;
-	send_seat = 0;
-	send_index = 0;
+		led_count = 0;
+		send_seat = 0;
+		send_index = 0;
 	  
 	user_io_init();
 	user_motion_init();
 	user_time_init();
 	user_uart_init();
-	HAL_IWDG_Start(&hiwdg);
+	#ifdef ENV_AIR
+		find_air_origin();
+  #endif		
+	__HAL_IWDG_START(&hiwdg);
 	  
 	init_flag = 1;
 	  
@@ -431,6 +629,9 @@ int main(void)
 				LED_TOGGLE();
 			}
 			/* LED_END */
+			/* DEBUG_INFO_START */
+			user_send_debug_info();
+			/* DEBUG_INFO_END */
 			/* SEAT_START */
 			if (status.seat_enable)
 			{
@@ -499,9 +700,9 @@ int main(void)
 		{
 			status.spb = 0;
 #ifndef ENV_AIR
-			SAFE(motion[MOTION1].high.set = motion[MOTION1].config.origin * ENV_SPACE);
-			SAFE(motion[MOTION2].high.set = motion[MOTION2].config.origin * ENV_SPACE);
-			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
+//			SAFE(motion[MOTION1].high.set = motion[MOTION1].config.origin * ENV_SPACE);
+//			SAFE(motion[MOTION2].high.set = motion[MOTION2].config.origin * ENV_SPACE);
+//			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
 #else
 			SAFE(motion[MOTION1].high.set = 0);
 			SAFE(motion[MOTION2].high.set = 0);
@@ -551,7 +752,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Initializes the CPU, AHB and APB busses clocks 
@@ -565,14 +766,14 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
   PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV8;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure the Systick interrupt time 
@@ -604,17 +805,17 @@ static void MX_ADC1_Init(void)
   hadc1.Init.NbrOfConversion = 7;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure Regular Channel 
     */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_13CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure Regular Channel 
@@ -623,7 +824,7 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure Regular Channel 
@@ -632,7 +833,7 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure Regular Channel 
@@ -641,7 +842,7 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 4;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure Regular Channel 
@@ -650,7 +851,7 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure Regular Channel 
@@ -659,7 +860,7 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 6;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
     /**Configure Regular Channel 
@@ -668,7 +869,7 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 7;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -682,7 +883,7 @@ static void MX_IWDG_Init(void)
   hiwdg.Init.Reload = 4095;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -700,22 +901,23 @@ static void MX_TIM1_Init(void)
   htim1.Init.Period = 999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
   if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -732,22 +934,23 @@ static void MX_TIM2_Init(void)
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
   if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -764,22 +967,23 @@ static void MX_TIM3_Init(void)
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
   if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -798,7 +1002,26 @@ static void MX_USART1_UART_Init(void)
   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart1) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* USART2 init function */
+static void MX_USART2_UART_Init(void)
+{
+
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -842,11 +1065,11 @@ static void MX_GPIO_Init(void)
                           |OUTPUT_573LE1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_CLR1_Pin|OUTPUT_DIR3_Pin 
+  HAL_GPIO_WritePin(GPIOC, OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_DIR3_Pin 
                           |OUTPUT_DIR2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin|OUTPUT_573LE2_Pin|OUTPUT_CLR2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin|OUTPUT_573LE2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, OUTPUT_PUL2_Pin|OUTPUT_LED0_Pin|OUTPUT_LED1_Pin|OUTPUT_SP8_Pin 
@@ -854,9 +1077,7 @@ static void MX_GPIO_Init(void)
                           |OUTPUT_PUL3_Pin|OUTPUT_SP3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, OUTPUT_573LE3_Pin|OUTPUT_DIR1_Pin|OUTPUT_CLR3_Pin|OUTPUT_NUP3_Pin 
-                          |OUTPUT_NDOWN3_Pin|OUTPUT_NUP2_Pin|OUTPUT_NDOWN2_Pin|OUTPUT_NUP1_Pin 
-                          |OUTPUT_NDOWN1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, OUTPUT_DIR1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : OUTPUT_SP1_Pin OUTPUT_SP2_Pin OUTPUT_SEATLED4_Pin OUTPUT_SEATLED3_Pin 
                            OUTPUT_573LE1_Pin */
@@ -868,7 +1089,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : OUTPUT_SEATLED2_Pin OUTPUT_SEATLED1_Pin OUTPUT_CLR1_Pin OUTPUT_DIR3_Pin 
                            OUTPUT_DIR2_Pin */
-  GPIO_InitStruct.Pin = OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_CLR1_Pin|OUTPUT_DIR3_Pin 
+  GPIO_InitStruct.Pin = OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_DIR3_Pin 
                           |OUTPUT_DIR2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -883,7 +1104,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : OUTPUT_PUL1_Pin OUTPUT_485RW_Pin OUTPUT_573LE2_Pin OUTPUT_CLR2_Pin */
-  GPIO_InitStruct.Pin = OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin|OUTPUT_573LE2_Pin|OUTPUT_CLR2_Pin;
+  GPIO_InitStruct.Pin = OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin|OUTPUT_573LE2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -911,11 +1132,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(INPUT_SW_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : OUTPUT_573LE3_Pin OUTPUT_DIR1_Pin OUTPUT_CLR3_Pin OUTPUT_NUP3_Pin 
-                           OUTPUT_NDOWN3_Pin OUTPUT_NUP2_Pin OUTPUT_NDOWN2_Pin OUTPUT_NUP1_Pin 
-                           OUTPUT_NDOWN1_Pin */
-  GPIO_InitStruct.Pin = OUTPUT_573LE3_Pin|OUTPUT_DIR1_Pin|OUTPUT_CLR3_Pin|OUTPUT_NUP3_Pin 
-                          |OUTPUT_NDOWN3_Pin|OUTPUT_NUP2_Pin|OUTPUT_NDOWN2_Pin|OUTPUT_NUP1_Pin 
-                          |OUTPUT_NDOWN1_Pin;
+                           OUTPUT_NDOWN3_Pin OUTPUT_NUP2_Pin OUTPUT_NDOWN1_Pin */
+  GPIO_InitStruct.Pin = OUTPUT_DIR1_Pin;                       
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
@@ -962,14 +1180,14 @@ static void MX_GPIO_Init(void)
   * @param  None
   * @retval None
   */
-void Error_Handler(void)
+void _Error_Handler(char * file, int line)
 {
-  /* USER CODE BEGIN Error_Handler */
+  /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   while(1) 
   {
   }
-  /* USER CODE END Error_Handler */ 
+  /* USER CODE END Error_Handler_Debug */ 
 }
 
 #ifdef USE_FULL_ASSERT

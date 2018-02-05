@@ -1,8 +1,13 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
+  * File Name          : main.hpp
   * Description        : This file contains the common defines of the application
   ******************************************************************************
+  ** This notice applies to any and all portions of this file
+  * that are not between comment pairs USER CODE BEGIN and
+  * USER CODE END. Other portions of this file, whether 
+  * inserted by the user or by software development tools
+  * are owned by their respective copyright owners.
   *
   * COPYRIGHT(c) 2017 STMicroelectronics
   *
@@ -35,6 +40,7 @@
 #define __MAIN_H
   /* Includes ------------------------------------------------------------------*/
 
+/* Includes ------------------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -57,12 +63,16 @@
 #define OUTPUT_SEATLED1_GPIO_Port GPIOC
 #define EXTI_UPLIMIT1_Pin GPIO_PIN_0
 #define EXTI_UPLIMIT1_GPIO_Port GPIOC
+#define EXTI_UPLIMIT1_EXTI_IRQn EXTI0_IRQn
 #define EXTI_DOWNLIMIT1_Pin GPIO_PIN_1
 #define EXTI_DOWNLIMIT1_GPIO_Port GPIOC
+#define EXTI_DOWNLIMIT1_EXTI_IRQn EXTI1_IRQn
 #define EXTI_UPLIMIT2_Pin GPIO_PIN_2
 #define EXTI_UPLIMIT2_GPIO_Port GPIOC
+#define EXTI_UPLIMIT2_EXTI_IRQn EXTI2_IRQn
 #define EXTI_DOWNLIMIT2_Pin GPIO_PIN_3
 #define EXTI_DOWNLIMIT2_GPIO_Port GPIOC
+#define EXTI_DOWNLIMIT2_EXTI_IRQn EXTI3_IRQn
 #define ADC_SEAT1_Pin GPIO_PIN_0
 #define ADC_SEAT1_GPIO_Port GPIOA
 #define ADC_SEAT2_Pin GPIO_PIN_1
@@ -81,8 +91,10 @@
 #define ADC_HEIGHT3_GPIO_Port GPIOA
 #define EXTI_UPLIMIT3_Pin GPIO_PIN_4
 #define EXTI_UPLIMIT3_GPIO_Port GPIOC
+#define EXTI_UPLIMIT3_EXTI_IRQn EXTI4_IRQn
 #define EXTI_DOWNLIMIT3_Pin GPIO_PIN_5
 #define EXTI_DOWNLIMIT3_GPIO_Port GPIOC
+#define EXTI_DOWNLIMIT3_EXTI_IRQn EXTI9_5_IRQn
 #define OUTPUT_PUL2_Pin GPIO_PIN_0
 #define OUTPUT_PUL2_GPIO_Port GPIOB
 #define OUTPUT_LED0_Pin GPIO_PIN_1
@@ -99,8 +111,7 @@
 #define OUTPUT_LED1_GPIO_Port GPIOB
 #define INPUT_SW_Pin GPIO_PIN_13
 #define INPUT_SW_GPIO_Port GPIOB
-#define OUTPUT_573LE3_Pin GPIO_PIN_11
-#define OUTPUT_573LE3_GPIO_Port GPIOD
+
 #define INPUT_BCD1_1_Pin GPIO_PIN_12
 #define INPUT_BCD1_1_GPIO_Port GPIOD
 #define INPUT_BCD2_1_Pin GPIO_PIN_13
@@ -121,30 +132,12 @@
 #define OUTPUT_485RW_GPIO_Port GPIOA
 #define OUTPUT_573LE2_Pin GPIO_PIN_12
 #define OUTPUT_573LE2_GPIO_Port GPIOA
-#define OUTPUT_CLR2_Pin GPIO_PIN_15
-#define OUTPUT_CLR2_GPIO_Port GPIOA
-#define OUTPUT_CLR1_Pin GPIO_PIN_10
-#define OUTPUT_CLR1_GPIO_Port GPIOC
 #define OUTPUT_DIR3_Pin GPIO_PIN_11
 #define OUTPUT_DIR3_GPIO_Port GPIOC
 #define OUTPUT_DIR2_Pin GPIO_PIN_12
 #define OUTPUT_DIR2_GPIO_Port GPIOC
 #define OUTPUT_DIR1_Pin GPIO_PIN_0
 #define OUTPUT_DIR1_GPIO_Port GPIOD
-#define OUTPUT_CLR3_Pin GPIO_PIN_1
-#define OUTPUT_CLR3_GPIO_Port GPIOD
-#define OUTPUT_NUP3_Pin GPIO_PIN_2
-#define OUTPUT_NUP3_GPIO_Port GPIOD
-#define OUTPUT_NDOWN3_Pin GPIO_PIN_3
-#define OUTPUT_NDOWN3_GPIO_Port GPIOD
-#define OUTPUT_NUP2_Pin GPIO_PIN_4
-#define OUTPUT_NUP2_GPIO_Port GPIOD
-#define OUTPUT_NDOWN2_Pin GPIO_PIN_5
-#define OUTPUT_NDOWN2_GPIO_Port GPIOD
-#define OUTPUT_NUP1_Pin GPIO_PIN_6
-#define OUTPUT_NUP1_GPIO_Port GPIOD
-#define OUTPUT_NDOWN1_Pin GPIO_PIN_7
-#define OUTPUT_NDOWN1_GPIO_Port GPIOD
 #define OUTPUT_SP8_Pin GPIO_PIN_3
 #define OUTPUT_SP8_GPIO_Port GPIOB
 #define OUTPUT_SP7_Pin GPIO_PIN_4
@@ -160,9 +153,26 @@
 #define OUTPUT_SP3_Pin GPIO_PIN_9
 #define OUTPUT_SP3_GPIO_Port GPIOB
 
+/* ########################## Assert Selection ############################## */
+/**
+  * @brief Uncomment the line below to expanse the "assert_param" macro in the 
+  *        HAL drivers code
+  */
+/* #define USE_FULL_ASSERT    1U */
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+void _Error_Handler(char *, int);
+
+#define Error_Handler() _Error_Handler(__FILE__, __LINE__)
+#ifdef __cplusplus
+}
+#endif
 
 /**
   * @}

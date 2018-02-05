@@ -4,6 +4,8 @@
 #include "stm32f1xx_hal.h"
 #include "user_config.h"
 
+extern uint8_t mask_pid;
+extern uint8_t up_loop,down_loop;
 extern void user_time_init(void);
 extern void delay_ns(uint32_t times);
 extern void delay_us(uint32_t times);
