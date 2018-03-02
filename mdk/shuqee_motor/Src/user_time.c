@@ -207,11 +207,15 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 //		 interval = (uint32_t)(600.0-pid_out);
 			if (GPIO_PIN_SET == out_dir)
 			{       
-				interval = (uint32_t)(motion[index].min_begin.up_origin-pid_out);       //上开度
+				interval = (uint32_t)(motion[index].min_begin.up_origin+100.0-pid_out);       //上开度
+				  /*限制阀的最大速度*/
+				interval = (interval<(motion[index].min_begin.up_origin-200))?(motion[index].min_begin.up_origin-200):interval; 
 			}
 			else
 			{
-         interval = (uint32_t)(motion[index].min_begin.down_origin-pid_out);   //下开度
+         interval = (uint32_t)(motion[index].min_begin.down_origin+100.0-pid_out);   //下开度
+				  /*限制阀的最大速度*/
+				interval = (interval<(motion[index].min_begin.down_origin-200))?(motion[index].min_begin.down_origin-200):interval; 				
 			}
 		 	break;
 		default:
@@ -224,17 +228,37 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 }
 
 void orign_pwm(TIM_HandleTypeDef *htim,enum motion_num index)
-{
-	if(up_loop)//上行
-	{
-		HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);  //上行	
-	}
-  if(down_loop)//下行	
-	{
-		HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);//下行	
-	}
+{	
+   if(motion[index].high.test_bit==0)
+	{	
+			if(up_loop)//上行
+			{
+				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);  //上行	
+				__HAL_TIM_SET_AUTORELOAD(htim, 99);
+			}
+			if(down_loop)//下行	
+			{
+				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);//下行	
+				__HAL_TIM_SET_AUTORELOAD(htim, 99);
+			}
+			motion[index].high.test_bit=motion[index].high.test_bit+1;
+  }
+	else	if(motion[index].high.test_bit)
+		{
+			HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);		
+			motion[index].high.test_bit=0;
+				if(up_loop)//上行
+				{
+					__HAL_TIM_SET_AUTORELOAD(htim, motion[index].min_begin.up_origin);
+				}
+				if(down_loop)//下行	
+				{
+					__HAL_TIM_SET_AUTORELOAD(htim, motion[index].min_begin.down_origin);	
+				}
+		}	
 }
 /**
   * @brief     Callback function of timer.

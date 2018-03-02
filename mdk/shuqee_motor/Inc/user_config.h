@@ -86,6 +86,7 @@ struct high
 	int now;
 	/* set height of motion */
 	int set;
+	uint8_t test_bit;
 };
 
 enum motion_num
@@ -168,6 +169,8 @@ struct motion_min_begin
 {
 	int up_origin;
 	int down_origin;
+	int last_up_origin;
+	int last_down_origin;
 };	
 struct motion_status
 {

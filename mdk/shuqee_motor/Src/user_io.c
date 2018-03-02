@@ -121,10 +121,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	else
 		LED_SEAT3(0);
 	
-//	if(delay_count[3])
-//		LED_SEAT4(1);
-//	else
-//		LED_SEAT4(0);
+	if(delay_count[3])
+		LED_SEAT4(1);
+	else
+		LED_SEAT4(0);
 //	HAL_GPIO_TogglePin(OUTPUT_SEATLED4_GPIO_Port, OUTPUT_SEATLED4_Pin);
 	
 	status.seat_num = seat_num_tmp;
@@ -367,7 +367,7 @@ static void pid_run(enum motion_num index)
 
 static void pid_init(enum motion_num index)
 {
-    motion[index].pid.proportion =0.2;  
+    motion[index].pid.proportion =0.05;  
     motion[index].pid.integral = 0;//0.00001;  
     motion[index].pid.derivative = 0;//0.01;
 }

@@ -68,6 +68,7 @@ struct status status = {0};
 int flag_rst = 0;	//reset flag
 uint8_t up_loop=0,down_loop=0;
 uint8_t mask_pid=0;
+static uint8_t flag_begin;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -371,12 +372,12 @@ void find_air_origin(void)
 	  	SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
 			SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
 			SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);  //设置初始的气缸的起始位置为MOTION1_CONFIG_ORIGIN；零
-      SAFE(motion[MOTION1].min_begin.up_origin=600);
-			SAFE(motion[MOTION2].min_begin.up_origin=600);
-			SAFE(motion[MOTION3].min_begin.up_origin=600);
-			SAFE(motion[MOTION1].min_begin.down_origin=600);
-			SAFE(motion[MOTION2].min_begin.down_origin=600);
-			SAFE(motion[MOTION3].min_begin.down_origin=600);  //先设置线圈在一个比较适合的开始度上进行下行操作，确保位置在最低下；
+      SAFE(motion[MOTION1].min_begin.up_origin=700);
+			SAFE(motion[MOTION2].min_begin.up_origin=700);
+			SAFE(motion[MOTION3].min_begin.up_origin=700);
+			SAFE(motion[MOTION1].min_begin.down_origin=700);
+			SAFE(motion[MOTION2].min_begin.down_origin=700);
+			SAFE(motion[MOTION3].min_begin.down_origin=700);  //先设置线圈在一个比较适合的开始度上进行下行操作，确保位置在最低下；
 	    HAL_Delay(500);
 	    /*等待ALL气缸到达最低点*/
 	    while(!((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE ))){}
@@ -388,7 +389,10 @@ void find_air_origin(void)
 			SAFE(motion[MOTION1].min_begin.down_origin=1000);
 			SAFE(motion[MOTION2].min_begin.down_origin=1000);
 			SAFE(motion[MOTION3].min_begin.down_origin=1000);  //先设置PWM在一个全部线圈都不动作的初始位置；  
-				
+			/*保存当前状态下缸的上行的ADC值*/
+			SAFE(motion[MOTION1].min_begin.last_up_origin=user_get_adc_height1());
+			SAFE(motion[MOTION2].min_begin.last_up_origin=user_get_adc_height2());
+			SAFE(motion[MOTION3].min_begin.last_up_origin=user_get_adc_height3());
 			/*执行全部上行*/
 				/*up_loop----bit1-->motion 1,bit2-->motion 2,bit3-->motion 3*/
 		 	for(air=MOTION1; air<MOTION_COUNT; air++)
@@ -402,68 +406,69 @@ void find_air_origin(void)
 				{
 				    if((up_loop&(1<<air))!=0)//motion air bit checkl  0-->reset,1-->non reset;
 						{				
-							  delay_us(180);
+							  HAL_Delay(50);
 							  switch(air)
 								{
-									case MOTION1:  if(user_get_adc_height1()>28*ENV_SPACE)  //判断如果高度有变化，CLR位；
+									case MOTION1:  if(user_get_adc_height1()>(motion[MOTION1].min_begin.last_up_origin+600))  //判断如果高度有变化，CLR位；
 																	{
-																		 up_loop&=~(1<<air);																		
+																		 up_loop&=~(1<<air);	
 																	}
 																	else
 																	{
-																		motion[MOTION1].min_begin.up_origin--;
-																		__HAL_TIM_SET_AUTORELOAD(&htim1, motion[MOTION1].min_begin.up_origin);
+																		motion[MOTION1].min_begin.up_origin-=10;
 																	}
 																	break;
-									case MOTION2:if(user_get_adc_height2()>28*ENV_SPACE)  //判断如果高度有变化，CLR位；
+									case MOTION2:if(user_get_adc_height2()>(motion[MOTION2].min_begin.last_up_origin+600))  //判断如果高度有变化，CLR位；
 																	{
 																		 up_loop&=~(1<<air);																		
 																	}
 																	else
 																	{
-																		motion[MOTION2].min_begin.up_origin--;
-																		__HAL_TIM_SET_AUTORELOAD(&htim2, motion[MOTION2].min_begin.up_origin);
+																		motion[MOTION2].min_begin.up_origin-=10;
 																	}
 																	break;																		
-									case MOTION3:if(user_get_adc_height3()>28*ENV_SPACE)  //判断如果高度有变化，CLR位；
+									case MOTION3:if(user_get_adc_height3()>(motion[MOTION3].min_begin.last_up_origin+600))  //判断如果高度有变化，CLR位；
 																	{
 																		 up_loop&=~(1<<air);																		
 																	}
 																	else
 																	{
-																		motion[MOTION3].min_begin.up_origin--;
-																		__HAL_TIM_SET_AUTORELOAD(&htim3, motion[MOTION3].min_begin.up_origin);
+																		motion[MOTION3].min_begin.up_origin-=10;
 																	}
 																	break;
 										
 									default: break;
 										
 								}		
-						}	
-					if(user_get_adc_height1()>=4096-25*ENV_SPACE )
+						}							
+					if(user_get_adc_height1()>=4096-40*ENV_SPACE )
 						{
 							HAL_GPIO_WritePin(motion[0].io.up_port, motion[0].io.up_pin, GPIO_PIN_SET);
 							HAL_GPIO_WritePin(motion[0].io.down_port, motion[0].io.down_pin, GPIO_PIN_SET);							 
 						}  	
-          else if(user_get_adc_height2()>=4096-25*ENV_SPACE )		
+          else if(user_get_adc_height2()>=4096-40*ENV_SPACE )		
 					{
 							HAL_GPIO_WritePin(motion[1].io.up_port, motion[1].io.up_pin, GPIO_PIN_SET);
 							HAL_GPIO_WritePin(motion[1].io.down_port, motion[1].io.down_pin, GPIO_PIN_SET);									
 					}		
-          else if (user_get_adc_height3()>=4096-25*ENV_SPACE )	
+          else if (user_get_adc_height3()>=4096-40*ENV_SPACE )	
 					{
 							HAL_GPIO_WritePin(motion[2].io.up_port, motion[2].io.up_pin, GPIO_PIN_SET);
 							HAL_GPIO_WritePin(motion[2].io.down_port, motion[2].io.down_pin, GPIO_PIN_SET);									
 					}							
 				}
 			/*等待气缸全部去到最高点*/
-		if(((user_get_adc_height1()>=4096-25*ENV_SPACE )&&(user_get_adc_height2()>=4096-25*ENV_SPACE )&&(user_get_adc_height3()>=4096-25*ENV_SPACE )))
+		if(((user_get_adc_height1()>=4096-40*ENV_SPACE )&&(user_get_adc_height2()>=4096-40*ENV_SPACE )&&(user_get_adc_height3()>=4096-40*ENV_SPACE )))
 			{
 				 up_loop&=~(1<<3);
 			}
 		}	
 				
-      HAL_Delay(500);				
+      HAL_Delay(500);			
+			/*保存当前状态下缸的下行的ADC值*/
+			SAFE(motion[MOTION1].min_begin.last_down_origin=user_get_adc_height1());
+			SAFE(motion[MOTION2].min_begin.last_down_origin=user_get_adc_height2());
+			SAFE(motion[MOTION3].min_begin.last_down_origin=user_get_adc_height3());		
 			/*执行全部下行*/
 		for(air=MOTION1; air<MOTION_COUNT; air++)
 	    {
@@ -476,37 +481,34 @@ void find_air_origin(void)
 				{
 				    if((down_loop&(1<<air))!=0)//motion air bit checkl  0-->reset,1-->non reset;
 						{				
-							  delay_us(180);
+							  HAL_Delay(50);
 							  switch(air)
 								{
-									case MOTION1:  if(user_get_adc_height1()<=(4096-28*ENV_SPACE))  //判断如果高度有变化，CLR位；
+									case MOTION1:  if(user_get_adc_height1()<=(motion[MOTION1].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
 																	{
 																		 down_loop&=~(1<<air);																		
 																	}
 																	else
 																	{
-																		motion[MOTION1].min_begin.down_origin--;
-																		__HAL_TIM_SET_AUTORELOAD(&htim1,motion[MOTION1].min_begin.down_origin);
+																		motion[MOTION1].min_begin.down_origin-=10;
 																	}
 																	break;
-									case MOTION2:if(user_get_adc_height2()<=(4096-28*ENV_SPACE))  //判断如果高度有变化，CLR位；
+									case MOTION2:if(user_get_adc_height2()<=(motion[MOTION2].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
 																	{
 																		 down_loop&=~(1<<air);																		
 																	}
 																	else
 																	{
-																		motion[MOTION2].min_begin.down_origin--;
-																		__HAL_TIM_SET_AUTORELOAD(&htim2,motion[MOTION2].min_begin.down_origin);
+																		motion[MOTION2].min_begin.down_origin-=10;
 																	}
 																	break;																		
-									case MOTION3:if(user_get_adc_height3()<=(4096-28*ENV_SPACE))  //判断如果高度有变化，CLR位；
+									case MOTION3:if(user_get_adc_height3()<=(motion[MOTION3].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
 																	{
 																		 down_loop&=~(1<<air);																		
 																	}
 																	else
 																	{
-																		motion[MOTION3].min_begin.down_origin--;
-																		__HAL_TIM_SET_AUTORELOAD(&htim3,motion[MOTION3].min_begin.down_origin);
+																		motion[MOTION3].min_begin.down_origin-=10;
 																	}
 																	break;										
 									default: break;										
@@ -576,14 +578,17 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_USART1_UART_Init();
-  MX_IWDG_Init();
+//  MX_IWDG_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
-
+	user_io_init();
+	user_motion_init();
+	user_time_init();
+	user_uart_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -597,20 +602,30 @@ int main(void)
 		send_seat = 0;
 		send_index = 0;
 	  
-	user_io_init();
-	user_motion_init();
-	user_time_init();
-	user_uart_init();
+//	user_io_init();
+//	user_motion_init();
+//	user_time_init();
+//	user_uart_init();
 	#ifdef ENV_AIR
-		find_air_origin();
+	if(flag_begin==0)
+		{
+			find_air_origin();
+			flag_begin=1;
+		}
+		else
+		{
+			SAFE(motion[MOTION1].high.set = 0);
+			SAFE(motion[MOTION2].high.set = 0);
+			SAFE(motion[MOTION3].high.set = 0);		
+		}			
   #endif		
-	__HAL_IWDG_START(&hiwdg);
+//	__HAL_IWDG_START(&hiwdg);
 	  
 	init_flag = 1;
 	  
 	while (init_flag != 0)
 	{
-		HAL_IWDG_Refresh(&hiwdg);
+//		HAL_IWDG_Refresh(&hiwdg);
 		status.seat_enable = GET_SEAT_ENABLE();
 		SAFE(status.seat_enable += status.seat_num);
 		SAFE(update = frame.enable);
@@ -700,9 +715,9 @@ int main(void)
 		{
 			status.spb = 0;
 #ifndef ENV_AIR
-//			SAFE(motion[MOTION1].high.set = motion[MOTION1].config.origin * ENV_SPACE);
-//			SAFE(motion[MOTION2].high.set = motion[MOTION2].config.origin * ENV_SPACE);
-//			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
+			SAFE(motion[MOTION1].high.set = motion[MOTION1].config.origin * ENV_SPACE);
+			SAFE(motion[MOTION2].high.set = motion[MOTION2].config.origin * ENV_SPACE);
+			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
 #else
 			SAFE(motion[MOTION1].high.set = 0);
 			SAFE(motion[MOTION2].high.set = 0);
