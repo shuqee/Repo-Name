@@ -43,6 +43,10 @@
 #define GET_UPLIMIT3() (!HAL_GPIO_ReadPin(EXTI_UPLIMIT3_GPIO_Port, EXTI_UPLIMIT3_Pin))
 #define GET_DOWNLIMIT3() (!HAL_GPIO_ReadPin(EXTI_DOWNLIMIT3_GPIO_Port, EXTI_DOWNLIMIT3_Pin))
 
+#define key1()  HAL_GPIO_ReadPin(INPUT_SPEED1_GPIO_Port,INPUT_SPEED1_Pin)
+#define key2()  HAL_GPIO_ReadPin(INPUT_SPEED2_GPIO_Port,INPUT_SPEED2_Pin)
+#define key3()  HAL_GPIO_ReadPin(INPUT_SPEED3_GPIO_Port,INPUT_SPEED3_Pin)
+#define key4()  HAL_GPIO_ReadPin(INPUT_SPEED4_GPIO_Port,INPUT_SPEED4_Pin)
 
 extern void user_io_init(void);
 

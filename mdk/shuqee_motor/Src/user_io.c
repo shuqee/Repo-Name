@@ -20,7 +20,7 @@ enum adc_item
 
 extern  int flag_rst;
 extern  uint8_t mask_pid;
-
+extern  uint8_t intput_level;
 static __IO uint16_t adc_buf[ADC_BUFF_SIZE][ADC_ITEM_COUNT];
 static __IO uint16_t adc_result[ADC_ITEM_COUNT];
 
@@ -367,7 +367,7 @@ static void pid_run(enum motion_num index)
 
 static void pid_init(enum motion_num index)
 {
-    motion[index].pid.proportion =0.05;  
+    motion[index].pid.proportion =(double)(0.01*intput_level);  
     motion[index].pid.integral = 0;//0.00001;  
     motion[index].pid.derivative = 0;//0.01;
 }

@@ -69,6 +69,7 @@ int flag_rst = 0;	//reset flag
 uint8_t up_loop=0,down_loop=0;
 uint8_t mask_pid=0;
 static uint8_t flag_begin;
+uint8_t intput_level;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -372,12 +373,12 @@ void find_air_origin(void)
 	  	SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
 			SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
 			SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);  //设置初始的气缸的起始位置为MOTION1_CONFIG_ORIGIN；零
-      SAFE(motion[MOTION1].min_begin.up_origin=700);
-			SAFE(motion[MOTION2].min_begin.up_origin=700);
-			SAFE(motion[MOTION3].min_begin.up_origin=700);
-			SAFE(motion[MOTION1].min_begin.down_origin=700);
-			SAFE(motion[MOTION2].min_begin.down_origin=700);
-			SAFE(motion[MOTION3].min_begin.down_origin=700);  //先设置线圈在一个比较适合的开始度上进行下行操作，确保位置在最低下；
+      SAFE(motion[MOTION1].min_begin.up_origin=550);
+			SAFE(motion[MOTION2].min_begin.up_origin=550);
+			SAFE(motion[MOTION3].min_begin.up_origin=550);
+			SAFE(motion[MOTION1].min_begin.down_origin=550);
+			SAFE(motion[MOTION2].min_begin.down_origin=550);
+			SAFE(motion[MOTION3].min_begin.down_origin=550);  //先设置线圈在一个比较适合的开始度上进行下行操作，确保位置在最低下；
 	    HAL_Delay(500);
 	    /*等待ALL气缸到达最低点*/
 	    while(!((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE ))){}
@@ -475,7 +476,7 @@ void find_air_origin(void)
 					down_loop |= 1<<air;
 	    }
 			    down_loop|=1<<air;
-			while(down_loop)  //上行标志位；
+			while(down_loop)  //下行标志位；
 			{
 				for(air=MOTION1; air<MOTION_COUNT; air++)
 				{
@@ -490,7 +491,7 @@ void find_air_origin(void)
 																	}
 																	else
 																	{
-																		motion[MOTION1].min_begin.down_origin-=10;
+																		motion[MOTION1].min_begin.down_origin-=30;   /*修改1号缸的初始化--速率*/
 																	}
 																	break;
 									case MOTION2:if(user_get_adc_height2()<=(motion[MOTION2].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
@@ -540,6 +541,14 @@ void find_air_origin(void)
 			mask_pid=0;
 }
 #endif
+
+void speed_scan(void)
+{
+	   if(key1())   intput_level|=0x01;   else  intput_level&=0x0e;
+	   if(key2())   intput_level|=0x02;   else  intput_level&=0x0d;
+	   if(key3())   intput_level|=0x04;   else  intput_level&=0x0b;
+	   if(key4())   intput_level|=0x08;   else  intput_level&=0x07;
+}	
 /* USER CODE END 0 */
 
 int main(void)
@@ -589,6 +598,7 @@ int main(void)
 	user_motion_init();
 	user_time_init();
 	user_uart_init();
+	speed_scan();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -633,6 +643,7 @@ int main(void)
 		SAFE(free_ndown());
 		SAFE(free_nup());
 #endif
+		speed_scan();   //检测速度的值，确定PID的比例系数值小；
 		if (update)
 		{
 			SAFE(frame.enable = 0);
