@@ -9,7 +9,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * COPYRIGHT(c) 2018 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -111,7 +111,8 @@
 #define OUTPUT_LED1_GPIO_Port GPIOB
 #define INPUT_SW_Pin GPIO_PIN_13
 #define INPUT_SW_GPIO_Port GPIOB
-
+#define OUTPUT_573LE2_Pin GPIO_PIN_11
+#define OUTPUT_573LE2_GPIO_Port GPIOD
 #define INPUT_BCD1_1_Pin GPIO_PIN_12
 #define INPUT_BCD1_1_GPIO_Port GPIOD
 #define INPUT_BCD2_1_Pin GPIO_PIN_13
@@ -130,8 +131,6 @@
 #define INPUT_BCD8_2_GPIO_Port GPIOC
 #define OUTPUT_485RW_Pin GPIO_PIN_8
 #define OUTPUT_485RW_GPIO_Port GPIOA
-#define OUTPUT_573LE2_Pin GPIO_PIN_12
-#define OUTPUT_573LE2_GPIO_Port GPIOA
 #define OUTPUT_DIR3_Pin GPIO_PIN_11
 #define OUTPUT_DIR3_GPIO_Port GPIOC
 #define OUTPUT_DIR2_Pin GPIO_PIN_12
@@ -152,6 +151,8 @@
 #define OUTPUT_PUL3_GPIO_Port GPIOB
 #define OUTPUT_SP3_Pin GPIO_PIN_9
 #define OUTPUT_SP3_GPIO_Port GPIOB
+#define OE_EN_Pin GPIO_PIN_1
+#define OE_EN_GPIO_Port GPIOE
 
 /* ########################## Assert Selection ############################## */
 /**

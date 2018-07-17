@@ -7,6 +7,7 @@ extern UART_HandleTypeDef huart2;
 struct frame frame = {0};
 static uint8_t uart1_receive_data = 0U;
 static uint8_t uart2_receive_data = 0U;
+uint8_t can_or_485=0;
 
 void user_uart_init(void)
 {
@@ -48,6 +49,7 @@ static void user_receive_data(uint8_t receive_data)
 			case 0xee:
 				frame.enable = 1;
 				frame.index = 0;
+			  SAFE(can_or_485=1);
 				break;
 			default :
 				frame.index = 0;

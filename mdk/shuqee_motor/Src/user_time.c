@@ -142,6 +142,43 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));
 }
 #else
+void online_change_parm(enum motion_num index)
+{
+	uint8_t i;
+	for(i=0;i<3;i++)
+	{
+//		if(motion[index].speed .record_up_max<SPEED_STANDARD)
+//		{
+//			motion[index].speed .record_up_max=0;
+//			motion[index].min_begin.up_origin-=5;    //增加速度；
+//		}
+		if(motion[index].speed .up_count <= 5)
+		{
+			if(motion[index].speed .record_up_max>SPEED_STANDARD)
+			{
+				motion[index].speed .record_up_max=0;
+				motion[index].min_begin.up_origin+=6;    //降低速度；
+				motion[index].speed .up_count ++;
+			}
+		}
+		
+//		if(motion[index].speed .record_down_max<SPEED_STANDARD)
+//		{
+//			motion[index].speed .record_down_max=0;
+//			motion[index].min_begin.down_origin-=5;
+//		}
+		if(motion[index].speed .down_count <= 5)
+		{
+			if(motion[index].speed .record_down_max>SPEED_STANDARD)
+			{
+				motion[index].speed .record_down_max=0;
+				motion[index].min_begin.down_origin+=6;
+				motion[index].speed .down_count ++;
+			}
+		}
+	}
+}
+
 void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 {
 	/* current direction of motion */
@@ -151,8 +188,10 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 	static uint8_t status[MOTION_COUNT] = {0,0,0};
 	uint32_t interval = 999;
 	double pid_out = 0;
-	
+
 	pid_out = motion[index].pid.out;
+
+//	online_change_parm(index);
 	
 	if (pid_out > 0)
 	{
@@ -160,8 +199,8 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 	}
 	else if (pid_out < 0)
 	{
-		pid_out = -pid_out;
 		sign = GPIO_PIN_RESET;
+		pid_out = -pid_out;
 	}
 	else
 	{

@@ -1,6 +1,7 @@
 #include "stm32f1xx_hal.h"
 #include "user_config.h"
 #include "user_io.h"
+#include "math.h"
 
 #define ADC_TH 0x03e8
 #define ADC_BUFF_SIZE 5
@@ -20,7 +21,7 @@ enum adc_item
 
 extern  int flag_rst;
 extern  uint8_t mask_pid;
-
+extern  uint8_t intput_level;
 static __IO uint16_t adc_buf[ADC_BUFF_SIZE][ADC_ITEM_COUNT];
 static __IO uint16_t adc_result[ADC_ITEM_COUNT];
 
@@ -44,11 +45,14 @@ void user_io_init(void)
 	HAL_GPIO_WritePin(OUTPUT_SP7_GPIO_Port, OUTPUT_SP7_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_SP8_GPIO_Port, OUTPUT_SP8_Pin, GPIO_PIN_SET);
 	
+	/*enable the 573 OE to pwm*/
+	HAL_GPIO_WritePin(OE_EN_GPIO_Port, OE_EN_Pin, GPIO_PIN_RESET);
 	/* enable the output of 74HC573D */
 	HAL_GPIO_WritePin(OUTPUT_573LE1_GPIO_Port, OUTPUT_573LE1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(OUTPUT_573LE2_GPIO_Port, OUTPUT_573LE2_Pin, GPIO_PIN_SET);	
 	/* set the io of 485 into the "receive data" mode */
 	HAL_GPIO_WritePin(OUTPUT_485RW_GPIO_Port, OUTPUT_485RW_Pin, GPIO_PIN_SET);
+
 	
 	HAL_ADCEx_Calibration_Start(&hadc1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buf, ADC_BUFF_SIZE*ADC_ITEM_COUNT);
@@ -134,11 +138,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	pid_init(MOTION3);
 #endif
 #ifdef ENV_AIR
+	
 if(!mask_pid)     
 {	
-	pid_run(MOTION1);
-	pid_run(MOTION2);
-	pid_run(MOTION3);
+		pid_run(MOTION1);
+		pid_run(MOTION2);
+		pid_run(MOTION3);
 }
 #endif
 }
@@ -296,60 +301,65 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #endif
 }
 
-//#ifdef ENV_AIR
-//static void pid_run(enum motion_num index)
-//{
-//	int  i_error,d_error;
-//	double pid_out = 0;
-//	
-//	motion[index].pid.set_point = motion[index].high.set;
-//	motion[index].high.now = adc_result[ADC_ITEM_HEIGHT1+index];
-//	
-//	i_error = motion[index].pid.set_point - motion[index].high.now;       //偏差
-//    /* 带死区的PID控制 */
-//	if (i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
-//	{
-//		i_error = 0;
-//		motion[index].pid.sum_error = 0;
-//	}
-//	
-//	motion[index].pid.sum_error += i_error;       //积分
-//	
-//    d_error = i_error - motion[index].pid.last_error;     //微分
-//	motion[index].pid.last_error = i_error;
-//	
-//    pid_out = motion[index].pid.proportion * i_error            //比例项
-//                  + motion[index].pid.integral * motion[index].pid.sum_error   //积分项
-//                  + motion[index].pid.derivative * d_error;        //微分项
-//	
-//	SAFE(motion[index].pid.out =pid_out);
-//}
+/*增加以到达目的的时间范围来区分不同速度*/
+void speed_classification(enum motion_num index)
+{
+	
+}
 
-//static void pid_init(enum motion_num index)
-//{
-//    motion[index].pid.proportion = 0.0001;
-//    motion[index].pid.integral = 0;     //0.00001; 
-//    motion[index].pid.derivative = 0;//0.00015;
-//}
-//#endif
 #ifdef ENV_AIR
-int mark_error;
 static void pid_run(enum motion_num index)
 {
 	int  i_error,d_error;
 	double pid_out = 0;
+	
 
 	motion[index].high.now = adc_result[ADC_ITEM_HEIGHT1+index];
 	motion[index].pid.set_point = motion[index].high.set;
-		
-	i_error = motion[index].pid.set_point  - motion[index].high.now;       //偏差
+  
+//	motion[index].speed.speed_timecnt ++;
+//	if(motion[index].speed.speed_timecnt>=250)
+//	{
+//		motion[index].speed.speed_timecnt=0;
+//		motion[index].speed.now=((motion[index].high.now -motion[index].high.last )*1000)/500;      //4096/500ms;  放大一千倍；
+//		if(motion[index].speed.now<0)
+//		motion[index].speed.now=-(((motion[index].high.now -motion[index].high.last ))*1000)/500; 
+//		SAFE(motion[index].high.last=motion[index].high.now);                     //保存上次的高度值；
+//		SAFE(temp_for_speed=motion[index].speed.now);
+//  }	
+//	if(motion[index].dir==GPIO_PIN_SET)
+//	{
+//	 if(motion[index].speed .record_up_max <temp_for_speed)
+//	  motion[index].speed .record_up_max =temp_for_speed;
+//	}
+//	else
+//	{
+//		if(motion[index].speed .record_down_max <temp_for_speed)
+//	  motion[index].speed .record_down_max =temp_for_speed;
+//	}	
+
+
+	i_error = motion[index].pid.set_point  - motion[index].high.now;       //高度偏差
+
 //	if(i_error<0)   motion[index].pid.proportion =0.0001;   //判断气缸是否下行，执行下行减速P；
-    /* 带死区的PID控制 */
+    /* 带死区的PID控制 ，位置高度的限定值*/
 	if (i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
 	{
 		i_error = 0;
+		motion[index].speed.count =0;
 		motion[index].pid.sum_error = 0;		
 		motion[index].pid.last_error=0;
+		motion[index].time_record.flag=0;		
+	}
+	else
+	{
+		motion[index].time_record .flag =1;     //开启时间计时；
+		motion[index].speed.count ++;
+		if(motion[index].speed.count==1)   //只保存第一次进入的高度值,设定高度值；
+		{
+			motion[index].speed.record_high=motion[index].high.now;
+			motion[index].speed.record_set=motion[index].pid.set_point;
+		}
 	}
 	
 	motion[index].pid.sum_error += i_error;       //积分
@@ -362,13 +372,48 @@ static void pid_run(enum motion_num index)
                   + motion[index].pid.derivative * d_error;        //微分项
 	
 	SAFE(motion[index].pid.out =pid_out);
-	if(index==1)  mark_error=pid_out;   //THE TEST MOTION 2;
+	/////////////////////////↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓///////////////////////////////
+	if(motion[index].time_record.flag)
+	{
+		motion[index].speed.speed_timecnt ++;  //每次进入自动加数来计数时间；
+	}	
+	/*如果缸到达了指定位置或者输入的数据与前面不一致  ||(motion[index].speed.record_set!=motion[index].pid.set_point)*/
+	if ((i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE))
+	{
+		/*实测时间与标准时间做比较*/
+		if((motion[index].speed.speed_timecnt*2000)>((fabs(motion[index].speed.record_high-motion[index].high.now)*SPEED_STANDARD)*1.4)) //T过大,速度过小; 
+		{ 
+			if(motion[index].dir==GPIO_PIN_SET)  //正方向；
+			{
+				motion[index].min_begin.up_origin --;
+			}
+			else                                 //反方向；
+			{
+				motion[index].min_begin .down_origin --;
+			}	
+		}
+		
+		if((motion[index].speed.speed_timecnt>0)&&((motion[index].speed.speed_timecnt*2000)<((fabs(motion[index].speed.record_high-motion[index].high.now)*SPEED_STANDARD)*0.6))) //T过小,速度过大;
+		{
+			if(motion[index].dir==GPIO_PIN_SET)  //正方向；
+			{
+				motion[index].min_begin.up_origin ++;
+			}
+			else                                 //反方向；
+			{
+				motion[index].min_begin .down_origin ++;
+			}	
+		}	
+			motion[index].speed.speed_timecnt=0;		
+	}
+	/////////////////////////↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑///////////////////////////////	
 }
 
 static void pid_init(enum motion_num index)
 {
-    motion[index].pid.proportion =0.05;  
+    motion[index].pid.proportion =(double)(0.01*intput_level);  
     motion[index].pid.integral = 0;//0.00001;  
     motion[index].pid.derivative = 0;//0.01;
 }
 #endif
+

@@ -1,6 +1,6 @@
 #ifndef __USER_IO_H
 #define __USER_IO_H
-
+#include "stm32f1xx_hal.h"
 #define LED_SEAT1(x) HAL_GPIO_WritePin(OUTPUT_SEATLED1_GPIO_Port, OUTPUT_SEATLED1_Pin, (GPIO_PinState)(!(x)))
 #define LED_SEAT2(x) HAL_GPIO_WritePin(OUTPUT_SEATLED2_GPIO_Port, OUTPUT_SEATLED2_Pin, (GPIO_PinState)(!(x)))
 #define LED_SEAT3(x) HAL_GPIO_WritePin(OUTPUT_SEATLED3_GPIO_Port, OUTPUT_SEATLED3_Pin, (GPIO_PinState)(!(x)))
@@ -43,7 +43,13 @@
 #define GET_UPLIMIT3() (!HAL_GPIO_ReadPin(EXTI_UPLIMIT3_GPIO_Port, EXTI_UPLIMIT3_Pin))
 #define GET_DOWNLIMIT3() (!HAL_GPIO_ReadPin(EXTI_DOWNLIMIT3_GPIO_Port, EXTI_DOWNLIMIT3_Pin))
 
+#define key1()  HAL_GPIO_ReadPin(INPUT_SPEED1_GPIO_Port,INPUT_SPEED1_Pin)
+#define key2()  HAL_GPIO_ReadPin(INPUT_SPEED2_GPIO_Port,INPUT_SPEED2_Pin)
+#define key3()  HAL_GPIO_ReadPin(INPUT_SPEED3_GPIO_Port,INPUT_SPEED3_Pin)
+#define key4()  HAL_GPIO_ReadPin(INPUT_SPEED4_GPIO_Port,INPUT_SPEED4_Pin)
 
 extern void user_io_init(void);
-
+extern uint16_t user_get_adc_height1(void);
+extern uint16_t user_get_adc_height2(void);
+extern uint16_t user_get_adc_height3(void);
 #endif /* __USER_IO_H */

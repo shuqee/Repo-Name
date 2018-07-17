@@ -9,7 +9,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * COPYRIGHT(c) 2018 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -45,12 +45,16 @@
 #include "user_io.h"
 #include "user_time.h"
 #include "user_uart.h"
+#include "user_can.h"
+#include "sw_timer.h"
 #include <string.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
+
+CAN_HandleTypeDef hcan;
 
 IWDG_HandleTypeDef hiwdg;
 
@@ -69,6 +73,7 @@ int flag_rst = 0;	//reset flag
 uint8_t up_loop=0,down_loop=0;
 uint8_t mask_pid=0;
 static uint8_t flag_begin;
+uint8_t intput_level;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,12 +87,11 @@ static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_CAN_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-extern uint16_t user_get_adc_height1(void);
-extern uint16_t user_get_adc_height2(void);
-extern uint16_t user_get_adc_height3(void);
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -365,22 +369,36 @@ void free_nup(void)
 }
 #endif
 #endif
+
 #ifdef ENV_AIR
 void find_air_origin(void)
 {
 	   static enum motion_num air;
+	   uint8_t i;
 	  	SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
 			SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
 			SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);  //设置初始的气缸的起始位置为MOTION1_CONFIG_ORIGIN；零
-      SAFE(motion[MOTION1].min_begin.up_origin=700);
-			SAFE(motion[MOTION2].min_begin.up_origin=700);
-			SAFE(motion[MOTION3].min_begin.up_origin=700);
-			SAFE(motion[MOTION1].min_begin.down_origin=700);
-			SAFE(motion[MOTION2].min_begin.down_origin=700);
-			SAFE(motion[MOTION3].min_begin.down_origin=700);  //先设置线圈在一个比较适合的开始度上进行下行操作，确保位置在最低下；
+      SAFE(motion[MOTION1].min_begin.up_origin=450);
+			SAFE(motion[MOTION2].min_begin.up_origin=450);
+			SAFE(motion[MOTION3].min_begin.up_origin=450);
+			SAFE(motion[MOTION1].min_begin.down_origin=450);
+			SAFE(motion[MOTION2].min_begin.down_origin=450);
+			SAFE(motion[MOTION3].min_begin.down_origin=450);  //先设置线圈在一个比较适合的开始度上进行下行操作，确保位置在最低下；
 	    HAL_Delay(500);
-	    /*等待ALL气缸到达最低点*/
+	    /*等待ALL气缸到达最低点*/ 
 	    while(!((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE ))){}
+//////////////*增加上下检测来避免出现开始通电没通气而导致的不能复位问题*/////////////////////////
+	  	SAFE(motion[MOTION1].high.set = 127 * ENV_SPACE);  //上行一半；
+			SAFE(motion[MOTION2].high.set = 127 * ENV_SPACE);
+			SAFE(motion[MOTION3].high.set = 127 * ENV_SPACE); 
+				 /*等待ALL气缸到达中间点*/
+	    while(!((user_get_adc_height1()>=90*ENV_SPACE )&&(user_get_adc_height2()>=90*ENV_SPACE )&&(user_get_adc_height3()>=90*ENV_SPACE ))){}		
+				
+	  	SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
+			SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
+			SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);  //设置初始的气缸的起始位置为MOTION1_CONFIG_ORIGIN；零	
+	    while(!((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE ))){}				
+///////////////*↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑*////////////////////////				
 	    /*气动自动检测程序*/
 			mask_pid=1;
       SAFE(motion[MOTION1].min_begin.up_origin=1000);
@@ -475,7 +493,7 @@ void find_air_origin(void)
 					down_loop |= 1<<air;
 	    }
 			    down_loop|=1<<air;
-			while(down_loop)  //上行标志位；
+			while(down_loop)  //下行标志位；
 			{
 				for(air=MOTION1; air<MOTION_COUNT; air++)
 				{
@@ -490,7 +508,7 @@ void find_air_origin(void)
 																	}
 																	else
 																	{
-																		motion[MOTION1].min_begin.down_origin-=10;
+																		motion[MOTION1].min_begin.down_origin-=30;   /*修改1号缸的初始化--速率*/
 																	}
 																	break;
 									case MOTION2:if(user_get_adc_height2()<=(motion[MOTION2].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
@@ -499,7 +517,7 @@ void find_air_origin(void)
 																	}
 																	else
 																	{
-																		motion[MOTION2].min_begin.down_origin-=10;
+																		motion[MOTION2].min_begin.down_origin-=20;
 																	}
 																	break;																		
 									case MOTION3:if(user_get_adc_height3()<=(motion[MOTION3].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
@@ -508,7 +526,7 @@ void find_air_origin(void)
 																	}
 																	else
 																	{
-																		motion[MOTION3].min_begin.down_origin-=10;
+																		motion[MOTION3].min_begin.down_origin-=20;
 																	}
 																	break;										
 									default: break;										
@@ -535,11 +553,24 @@ void find_air_origin(void)
 			{
 				  down_loop&=~(1<<3);
 			}				
-		}	 
+		}	
+		for(i=0;i<3;i++)	
+		{
+			motion[i].min_begin.up_origin+=24;
+			motion[i].min_begin.down_origin+=24;
+		}
 
 			mask_pid=0;
 }
 #endif
+
+void speed_scan(void)
+{
+	   if(key1())   intput_level|=0x01;   else  intput_level&=0x0e;
+	   if(key2())   intput_level|=0x02;   else  intput_level&=0x0d;
+	   if(key3())   intput_level|=0x04;   else  intput_level&=0x0b;
+	   if(key4())   intput_level|=0x08;   else  intput_level&=0x07;
+}	
 /* USER CODE END 0 */
 
 int main(void)
@@ -552,7 +583,8 @@ int main(void)
 	static uint8_t send_buf[4] = {0xff,0xc1};
 	static int send_index = 0;
 	/* flag of update about the data of uart coming; not update: 0; update: 1 */
-	uint8_t update;
+	uint8_t update_485;
+	uint8_t update_can;
 	/* flag of init; not init: 0; init: 1 */
 	uint8_t init_flag = 0;
   /* USER CODE END 1 */
@@ -583,12 +615,16 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_USART2_UART_Init();
+  MX_CAN_Init();
 
   /* USER CODE BEGIN 2 */
 	user_io_init();
 	user_motion_init();
 	user_time_init();
 	user_uart_init();
+	speed_scan();
+	user_can_init();
+	sw_timer_init(); 
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -626,19 +662,23 @@ int main(void)
 	while (init_flag != 0)
 	{
 //		HAL_IWDG_Refresh(&hiwdg);
+		sw_timer_handle();
 		status.seat_enable = GET_SEAT_ENABLE();
 		SAFE(status.seat_enable += status.seat_num);
-		SAFE(update = frame.enable);
+		SAFE(update_485 = frame.enable);
+		SAFE(update_can=get_update_flag()); 
 #ifndef ENV_AIR
 		SAFE(free_ndown());
 		SAFE(free_nup());
 #endif
-		if (update)
+		speed_scan();   //检测速度的值，确定PID的比例系数值小；
+		if (update_485||update_can)
 		{
 			SAFE(frame.enable = 0);
+			SAFE(clr_update_flag()); 
 			/* LED_START */
 			led_count++;
-			led_count = led_count%10;
+			led_count = led_count%100;
 			if(led_count == 0)
 			{
 				LED_TOGGLE();
@@ -650,6 +690,24 @@ int main(void)
 			/* SEAT_START */
 			if (status.seat_enable)
 			{
+				///////////////////////////////////////////////////////////////////	
+				if(!can_or_485)
+				{
+					uint8_t msg_buff_l[8]={0};
+//					uint8_t a,b,c;
+					SAFE(get_high_speed_date(HIGHT_MSG_P,msg_buff_l));       
+		//			SAFE(get_high_speed_date(ENV_SP_P,&a));
+		//			SAFE(get_high_speed_date(SEAT_ID_P,&b));
+		//			SAFE(get_high_speed_date(SEAT_SP_P,&c));
+					
+					SAFE(frame.buff[4]=msg_buff_l[2]);
+					SAFE(frame.buff[3]=msg_buff_l[1]);
+					SAFE(frame.buff[2]=msg_buff_l[0]);
+					
+					SAFE(frame.buff[5]=msg_buff_l[4]);
+					SAFE(frame.buff[7]=msg_buff_l[5]);
+				}
+			////////////////////////////////////////////////////////////
 				/* update the set of height */
 				SAFE(motion[MOTION1].high.set = frame.buff[4] * ENV_SPACE);
 				SAFE(motion[MOTION2].high.set = frame.buff[3] * ENV_SPACE);
@@ -827,7 +885,7 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_13CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -883,6 +941,29 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_7;
   sConfig.Rank = 7;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* CAN init function */
+static void MX_CAN_Init(void)
+{
+
+  hcan.Instance = CAN1;
+  hcan.Init.Prescaler = 12;
+  hcan.Init.Mode = CAN_MODE_NORMAL;
+  hcan.Init.SJW = CAN_SJW_1TQ;
+  hcan.Init.BS1 = CAN_BS1_5TQ;
+  hcan.Init.BS2 = CAN_BS2_6TQ;
+  hcan.Init.TTCM = DISABLE;
+  hcan.Init.ABOM = DISABLE;
+  hcan.Init.AWUM = DISABLE;
+  hcan.Init.NART = DISABLE;
+  hcan.Init.RFLM = DISABLE;
+  hcan.Init.TXFP = DISABLE;
+  if (HAL_CAN_Init(&hcan) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -1080,11 +1161,10 @@ static void MX_GPIO_Init(void)
                           |OUTPUT_573LE1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_DIR3_Pin 
-                          |OUTPUT_DIR2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_DIR3_Pin|OUTPUT_DIR2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin|OUTPUT_573LE2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, OUTPUT_PUL2_Pin|OUTPUT_LED0_Pin|OUTPUT_LED1_Pin|OUTPUT_SP8_Pin 
@@ -1092,7 +1172,10 @@ static void MX_GPIO_Init(void)
                           |OUTPUT_PUL3_Pin|OUTPUT_SP3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, OUTPUT_DIR1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, OUTPUT_573LE2_Pin|OUTPUT_DIR1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(OE_EN_GPIO_Port, OE_EN_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : OUTPUT_SP1_Pin OUTPUT_SP2_Pin OUTPUT_SEATLED4_Pin OUTPUT_SEATLED3_Pin 
                            OUTPUT_573LE1_Pin */
@@ -1102,10 +1185,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : OUTPUT_SEATLED2_Pin OUTPUT_SEATLED1_Pin OUTPUT_CLR1_Pin OUTPUT_DIR3_Pin 
-                           OUTPUT_DIR2_Pin */
-  GPIO_InitStruct.Pin = OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_DIR3_Pin 
-                          |OUTPUT_DIR2_Pin;
+  /*Configure GPIO pins : OUTPUT_SEATLED2_Pin OUTPUT_SEATLED1_Pin OUTPUT_DIR3_Pin OUTPUT_DIR2_Pin */
+  GPIO_InitStruct.Pin = OUTPUT_SEATLED2_Pin|OUTPUT_SEATLED1_Pin|OUTPUT_DIR3_Pin|OUTPUT_DIR2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -1118,8 +1199,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : OUTPUT_PUL1_Pin OUTPUT_485RW_Pin OUTPUT_573LE2_Pin OUTPUT_CLR2_Pin */
-  GPIO_InitStruct.Pin = OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin|OUTPUT_573LE2_Pin;
+  /*Configure GPIO pins : OUTPUT_PUL1_Pin OUTPUT_485RW_Pin */
+  GPIO_InitStruct.Pin = OUTPUT_PUL1_Pin|OUTPUT_485RW_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -1146,9 +1227,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(INPUT_SW_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : OUTPUT_573LE3_Pin OUTPUT_DIR1_Pin OUTPUT_CLR3_Pin OUTPUT_NUP3_Pin 
-                           OUTPUT_NDOWN3_Pin OUTPUT_NUP2_Pin OUTPUT_NDOWN1_Pin */
-  GPIO_InitStruct.Pin = OUTPUT_DIR1_Pin;                       
+  /*Configure GPIO pins : OUTPUT_573LE2_Pin OUTPUT_DIR1_Pin */
+  GPIO_InitStruct.Pin = OUTPUT_573LE2_Pin|OUTPUT_DIR1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
@@ -1164,6 +1244,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : OE_EN_Pin */
+  GPIO_InitStruct.Pin = OE_EN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(OE_EN_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);

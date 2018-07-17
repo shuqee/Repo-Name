@@ -71,6 +71,8 @@
 	#define ENV_SPEED_MIN 459
 	#define ENV_SPEED_ACCER 5
 	#define ENV_ACCER     (ENV_SPACE * (uint32_t)256 * (uint32_t)20)
+	/*作为在线调节的标准速度值*/
+	#define SPEED_STANDARD 2000000/4096     //毫秒单位(放大1000倍)；
 #endif
 
 /* atomic instructions */
@@ -87,6 +89,7 @@ struct high
 	/* set height of motion */
 	int set;
 	uint8_t test_bit;
+	int last;
 };
 
 enum motion_num
@@ -153,7 +156,6 @@ struct motion_io
 	uint16_t				down_pin;	
 };
 
-
 struct motion_pid
 {
 	int set_point;     //设定目标 Desired Value
@@ -165,6 +167,7 @@ struct motion_pid
     int prev_error;               //Error[-2]
     double out;                  //输出控制量
 };
+
 struct motion_min_begin
 {
 	int up_origin;
@@ -172,6 +175,28 @@ struct motion_min_begin
 	int last_up_origin;
 	int last_down_origin;
 };	
+
+struct motion_time_record
+{
+	int up_record;
+	int down_record;
+	uint8_t flag;
+};	
+
+struct speed
+{
+	int now;
+	int set;
+	int speed_timecnt;
+	int record_up_max;
+	int record_down_max;
+	uint8_t up_count;
+	uint8_t down_count;
+	int record_high;
+	int record_set;
+	int count;
+};	
+
 struct motion_status
 {
 	/* number of motion */
@@ -182,6 +207,8 @@ struct motion_status
 	struct motion_io io;
 	struct motion_pid pid;
 	struct motion_min_begin min_begin;
+	struct motion_time_record time_record;
+	struct speed speed;
 };
 
 struct status
@@ -200,6 +227,7 @@ struct status
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern CAN_HandleTypeDef hcan;
 
 extern struct motion_status motion[MOTION_COUNT];
 extern struct status status;

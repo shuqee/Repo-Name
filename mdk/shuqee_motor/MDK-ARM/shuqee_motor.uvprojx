@@ -14,7 +14,7 @@
         <TargetCommonOption>
           <Device>STM32F103VE</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F1xx_DFP.2.2.0</PackID>
+          <PackID>Keil.STM32F1xx_DFP.1.0.5</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000-0x2000FFFF) IROM(0x8000000-0x807FFFF) CLOCK(8000000) CPUTYPE("Cortex-M3")</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -365,7 +365,7 @@
               <MiscControls>--C99</MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xE</Define>
               <Undefine></Undefine>
-              <IncludePath>../Inc;     ../Drivers/STM32F1xx_HAL_Driver/Inc;     ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;     ../Drivers/CMSIS/Device/ST/STM32F1xx/Include;     ../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;.\user_file</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -491,6 +491,11 @@
               <FileType>1</FileType>
               <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f1xx_hal_can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_can.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -545,6 +550,21 @@
               <FileName>stm32f1xx_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Src/stm32f1xx_it.c</FilePath>
+            </File>
+            <File>
+              <FileName>can_tx_server.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_file\can_tx_server.c</FilePath>
+            </File>
+            <File>
+              <FileName>sw_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_file\sw_timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>user_can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_file\user_can.c</FilePath>
             </File>
           </Files>
         </Group>
