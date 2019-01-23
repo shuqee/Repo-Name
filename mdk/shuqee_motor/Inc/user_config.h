@@ -11,6 +11,8 @@
 /* two degrees of freedom platform  */
 /* #define ENV_2DOF */
 
+#define ABS(x) ((x)>0?(x):-(x)) 
+
 #define ENV_AIR
 
 #ifdef ENV_3DOF
@@ -68,11 +70,13 @@
 	#define ENV_SPACE 16
 	/* the reload value of timer when speed is in max */
 	#define ENV_SPEED_MAX 96
-	#define ENV_SPEED_MIN 459
+	#define ENV_SPEED_MIN 479
 	#define ENV_SPEED_ACCER 5
 	#define ENV_ACCER     (ENV_SPACE * (uint32_t)256 * (uint32_t)20)
 	/*作为在线调节的标准速度值*/
-	#define SPEED_STANDARD 2000000/4096     //毫秒单位(放大1000倍)；
+//	#define SPEED_LARGE_STANDARD  1200   //1.2S；
+//  #define SPEED_LITTLE_STANDARD  800  //0.8S；
+	#define ENV_SPEED_STANDARD         300  //1S;
 #endif
 
 /* atomic instructions */
@@ -88,8 +92,10 @@ struct high
 	int now;
 	/* set height of motion */
 	int set;
-	uint8_t test_bit;
+	volatile uint8_t test_bit;
 	int last;
+	int pre_now;
+	int pre_set;
 };
 
 enum motion_num
@@ -158,44 +164,10 @@ struct motion_io
 
 struct motion_pid
 {
-	int set_point;     //设定目标 Desired Value
-    long sum_error;                //误差累计
-    double  proportion;         //比例常数 Proportional Cons
-    double  integral;           //积分常数 Integral Const
-    double  derivative;         //微分常数 Derivative Const
-    int last_error;               //Error[-1]
-    int prev_error;               //Error[-2]
+	  int set_point;     //设定目标 Desired Value
+    uint8_t dir;                //误差累计
     double out;                  //输出控制量
 };
-
-struct motion_min_begin
-{
-	int up_origin;
-	int down_origin;
-	int last_up_origin;
-	int last_down_origin;
-};	
-
-struct motion_time_record
-{
-	int up_record;
-	int down_record;
-	uint8_t flag;
-};	
-
-struct speed
-{
-	int now;
-	int set;
-	int speed_timecnt;
-	int record_up_max;
-	int record_down_max;
-	uint8_t up_count;
-	uint8_t down_count;
-	int record_high;
-	int record_set;
-	int count;
-};	
 
 struct motion_status
 {
@@ -206,9 +178,6 @@ struct motion_status
 	GPIO_PinState dir;
 	struct motion_io io;
 	struct motion_pid pid;
-	struct motion_min_begin min_begin;
-	struct motion_time_record time_record;
-	struct speed speed;
 };
 
 struct status

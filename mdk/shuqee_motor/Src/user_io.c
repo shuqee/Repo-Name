@@ -20,7 +20,6 @@ enum adc_item
 };
 
 extern  int flag_rst;
-extern  uint8_t mask_pid;
 extern  uint8_t intput_level;
 static __IO uint16_t adc_buf[ADC_BUFF_SIZE][ADC_ITEM_COUNT];
 static __IO uint16_t adc_result[ADC_ITEM_COUNT];
@@ -30,7 +29,6 @@ extern DMA_HandleTypeDef hdma_adc1;
 
 #ifdef ENV_AIR
 static void pid_run(enum motion_num index);
-static void pid_init(enum motion_num index);
 #endif
 
 void user_io_init(void)
@@ -133,18 +131,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	
 	status.seat_num = seat_num_tmp;
 #ifdef ENV_AIR
-	pid_init(MOTION1);
-	pid_init(MOTION2);
-	pid_init(MOTION3);
-#endif
-#ifdef ENV_AIR
 	
-if(!mask_pid)     
-{	
 		pid_run(MOTION1);
 		pid_run(MOTION2);
 		pid_run(MOTION3);
-}
 #endif
 }
 
@@ -301,119 +291,106 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #endif
 }
 
-/*增加以到达目的的时间范围来区分不同速度*/
-void speed_classification(enum motion_num index)
-{
-	
-}
+const  uint32_t  pid_table[]={ 
+999,999,999,600,600,570,565,560,555,550,	
+545,540,535,530,525,520,515,510,505,500,
+500,500,500,500,500,500,500,500,500,500,
+495,490,485,480,475,470,465,460,455,450,
+445,440,435,430,425,420,415,410,405,400,	
+395,390,385,380,375,370,365,360,355,350,
+};	 
 
 #ifdef ENV_AIR
 static void pid_run(enum motion_num index)
 {
-	int  i_error,d_error;
+	int  i_error;
 	double pid_out = 0;
 	
-
 	motion[index].high.now = adc_result[ADC_ITEM_HEIGHT1+index];
 	motion[index].pid.set_point = motion[index].high.set;
   
-//	motion[index].speed.speed_timecnt ++;
-//	if(motion[index].speed.speed_timecnt>=250)
-//	{
-//		motion[index].speed.speed_timecnt=0;
-//		motion[index].speed.now=((motion[index].high.now -motion[index].high.last )*1000)/500;      //4096/500ms;  放大一千倍；
-//		if(motion[index].speed.now<0)
-//		motion[index].speed.now=-(((motion[index].high.now -motion[index].high.last ))*1000)/500; 
-//		SAFE(motion[index].high.last=motion[index].high.now);                     //保存上次的高度值；
-//		SAFE(temp_for_speed=motion[index].speed.now);
-//  }	
-//	if(motion[index].dir==GPIO_PIN_SET)
-//	{
-//	 if(motion[index].speed .record_up_max <temp_for_speed)
-//	  motion[index].speed .record_up_max =temp_for_speed;
-//	}
-//	else
-//	{
-//		if(motion[index].speed .record_down_max <temp_for_speed)
-//	  motion[index].speed .record_down_max =temp_for_speed;
-//	}	
-
-
 	i_error = motion[index].pid.set_point  - motion[index].high.now;       //高度偏差
-
-//	if(i_error<0)   motion[index].pid.proportion =0.0001;   //判断气缸是否下行，执行下行减速P；
+	/*确定阀开度的位置*/
+  switch((ABS(i_error)/68)) 
+	{
+		case 0: pid_out=pid_table[0]; break;
+		case 1: pid_out=pid_table[1]; break;
+		case 2: pid_out=pid_table[2]; break;
+		case 3: pid_out=pid_table[3]; break;
+		case 4: pid_out=pid_table[4]; break;
+		case 5: pid_out=pid_table[5]; break;
+		case 6: pid_out=pid_table[6]; break;
+		case 7: pid_out=pid_table[7]; break;
+		case 8: pid_out=pid_table[8]; break;
+		case 9: pid_out=pid_table[9]; break;
+		case 10: pid_out=pid_table[10]; break;
+		case 11: pid_out=pid_table[11]; break;
+		case 12: pid_out=pid_table[12]; break;
+		case 13: pid_out=pid_table[13]; break;
+		case 14: pid_out=pid_table[14]; break;
+		case 15: pid_out=pid_table[15]; break;
+		case 16: pid_out=pid_table[16]; break;
+		case 17: pid_out=pid_table[17]; break;
+		case 18: pid_out=pid_table[18]; break;
+		case 19: pid_out=pid_table[19]; break;
+		case 20: pid_out=pid_table[20]; break;
+		case 21: pid_out=pid_table[21]; break; 
+		case 22: pid_out=pid_table[22]; break;
+		case 23: pid_out=pid_table[23]; break;
+		case 24: pid_out=pid_table[24]; break;
+		case 25: pid_out=pid_table[25]; break;
+		case 26: pid_out=pid_table[26]; break;
+		case 27: pid_out=pid_table[27]; break;
+		case 28: pid_out=pid_table[28]; break;
+		case 29: pid_out=pid_table[29]; break;
+		case 30: pid_out=pid_table[30]; break;
+		case 31: pid_out=pid_table[31]; break;
+		case 32: pid_out=pid_table[32]; break;
+		case 33: pid_out=pid_table[33]; break;
+		case 34: pid_out=pid_table[34]; break;
+		case 35: pid_out=pid_table[35]; break;
+		case 36: pid_out=pid_table[36]; break;
+		case 37: pid_out=pid_table[37]; break;
+		case 38: pid_out=pid_table[38]; break;
+		case 39: pid_out=pid_table[39]; break;
+		case 40: pid_out=pid_table[40]; break;
+		case 41: pid_out=pid_table[41]; break; 	
+		case 42: pid_out=pid_table[43]; break;
+		case 43: pid_out=pid_table[43]; break;
+		case 44: pid_out=pid_table[44]; break;
+		case 45: pid_out=pid_table[45]; break;
+		case 46: pid_out=pid_table[46]; break;
+		case 47: pid_out=pid_table[47]; break;
+		case 48: pid_out=pid_table[48]; break;
+		case 49: pid_out=pid_table[49]; break;	
+		case 50: pid_out=pid_table[50]; break;
+		case 51: pid_out=pid_table[51]; break;
+		case 52: pid_out=pid_table[52]; break;
+		case 53: pid_out=pid_table[53]; break;
+		case 54: pid_out=pid_table[54]; break;
+		case 55: pid_out=pid_table[55]; break;
+		case 56: pid_out=pid_table[56]; break;
+		case 57: pid_out=pid_table[57]; break;
+		case 58: pid_out=pid_table[58]; break;
+		case 59: pid_out=pid_table[59]; break;	
+		default: break;
+	}	 
     /* 带死区的PID控制 ，位置高度的限定值*/
-	if (i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE)
+	if (i_error > -20*ENV_SPACE && i_error < 20*ENV_SPACE)
 	{
-		i_error = 0;
-		motion[index].speed.count =0;
-		motion[index].pid.sum_error = 0;		
-		motion[index].pid.last_error=0;
-		motion[index].time_record.flag=0;		
+		i_error=0;
+		motion[index].pid.dir = GPIO_PIN_STOP ; 
 	}
-	else
+	/*判断方向*/ 
+	else if (i_error >= 20*ENV_SPACE)
 	{
-		motion[index].time_record .flag =1;     //开启时间计时；
-		motion[index].speed.count ++;
-		if(motion[index].speed.count==1)   //只保存第一次进入的高度值,设定高度值；
-		{
-			motion[index].speed.record_high=motion[index].high.now;
-			motion[index].speed.record_set=motion[index].pid.set_point;
-		}
+		motion[index].pid.dir = GPIO_PIN_SET;    //上
 	}
-	
-	motion[index].pid.sum_error += i_error;       //积分
-	
-    d_error = i_error - motion[index].pid.last_error;     //微分
-	motion[index].pid.last_error = i_error;
-	
-    pid_out = motion[index].pid.proportion * i_error            //比例项
-                  + motion[index].pid.integral * motion[index].pid.sum_error   //积分项
-                  + motion[index].pid.derivative * d_error;        //微分项
-	
-	SAFE(motion[index].pid.out =pid_out);
-	/////////////////////////↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓///////////////////////////////
-	if(motion[index].time_record.flag)
+	else 
 	{
-		motion[index].speed.speed_timecnt ++;  //每次进入自动加数来计数时间；
+		motion[index].pid.dir  = GPIO_PIN_RESET;    //下
 	}	
-	/*如果缸到达了指定位置或者输入的数据与前面不一致  ||(motion[index].speed.record_set!=motion[index].pid.set_point)*/
-	if ((i_error > -25*ENV_SPACE && i_error < 25*ENV_SPACE))
-	{
-		/*实测时间与标准时间做比较*/
-		if((motion[index].speed.speed_timecnt*2000)>((fabs(motion[index].speed.record_high-motion[index].high.now)*SPEED_STANDARD)*1.4)) //T过大,速度过小; 
-		{ 
-			if(motion[index].dir==GPIO_PIN_SET)  //正方向；
-			{
-				motion[index].min_begin.up_origin --;
-			}
-			else                                 //反方向；
-			{
-				motion[index].min_begin .down_origin --;
-			}	
-		}
-		
-		if((motion[index].speed.speed_timecnt>0)&&((motion[index].speed.speed_timecnt*2000)<((fabs(motion[index].speed.record_high-motion[index].high.now)*SPEED_STANDARD)*0.6))) //T过小,速度过大;
-		{
-			if(motion[index].dir==GPIO_PIN_SET)  //正方向；
-			{
-				motion[index].min_begin.up_origin ++;
-			}
-			else                                 //反方向；
-			{
-				motion[index].min_begin .down_origin ++;
-			}	
-		}	
-			motion[index].speed.speed_timecnt=0;		
-	}
-	/////////////////////////↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑///////////////////////////////	
-}
-
-static void pid_init(enum motion_num index)
-{
-    motion[index].pid.proportion =(double)(0.01*intput_level);  
-    motion[index].pid.integral = 0;//0.00001;  
-    motion[index].pid.derivative = 0;//0.01;
+	SAFE(motion[index].pid.out=pid_out); 
 }
 #endif
 

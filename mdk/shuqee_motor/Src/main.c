@@ -70,10 +70,10 @@ UART_HandleTypeDef huart2;
 struct motion_status motion[MOTION_COUNT] = {MOTION1};
 struct status status = {0};
 int flag_rst = 0;	//reset flag
-uint8_t up_loop=0,down_loop=0;
-uint8_t mask_pid=0;
-static uint8_t flag_begin;
+volatile uint8_t up_loop=0,down_loop=0;  
+volatile uint8_t mask_adpat_init=0;
 uint8_t intput_level;
+char offset_data;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -370,206 +370,32 @@ void free_nup(void)
 #endif
 #endif
 
-#ifdef ENV_AIR
-void find_air_origin(void)
-{
-	   static enum motion_num air;
-	   uint8_t i;
-	  	SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
-			SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
-			SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);  //设置初始的气缸的起始位置为MOTION1_CONFIG_ORIGIN；零
-      SAFE(motion[MOTION1].min_begin.up_origin=450);
-			SAFE(motion[MOTION2].min_begin.up_origin=450);
-			SAFE(motion[MOTION3].min_begin.up_origin=450);
-			SAFE(motion[MOTION1].min_begin.down_origin=450);
-			SAFE(motion[MOTION2].min_begin.down_origin=450);
-			SAFE(motion[MOTION3].min_begin.down_origin=450);  //先设置线圈在一个比较适合的开始度上进行下行操作，确保位置在最低下；
-	    HAL_Delay(500);
-	    /*等待ALL气缸到达最低点*/ 
-	    while(!((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE ))){}
-//////////////*增加上下检测来避免出现开始通电没通气而导致的不能复位问题*/////////////////////////
-	  	SAFE(motion[MOTION1].high.set = 127 * ENV_SPACE);  //上行一半；
-			SAFE(motion[MOTION2].high.set = 127 * ENV_SPACE);
-			SAFE(motion[MOTION3].high.set = 127 * ENV_SPACE); 
-				 /*等待ALL气缸到达中间点*/
-	    while(!((user_get_adc_height1()>=90*ENV_SPACE )&&(user_get_adc_height2()>=90*ENV_SPACE )&&(user_get_adc_height3()>=90*ENV_SPACE ))){}		
-				
-	  	SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
-			SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
-			SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);  //设置初始的气缸的起始位置为MOTION1_CONFIG_ORIGIN；零	
-	    while(!((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE ))){}				
-///////////////*↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑*////////////////////////				
-	    /*气动自动检测程序*/
-			mask_pid=1;
-      SAFE(motion[MOTION1].min_begin.up_origin=1000);
-			SAFE(motion[MOTION2].min_begin.up_origin=1000);
-			SAFE(motion[MOTION3].min_begin.up_origin=1000);
-			SAFE(motion[MOTION1].min_begin.down_origin=1000);
-			SAFE(motion[MOTION2].min_begin.down_origin=1000);
-			SAFE(motion[MOTION3].min_begin.down_origin=1000);  //先设置PWM在一个全部线圈都不动作的初始位置；  
-			/*保存当前状态下缸的上行的ADC值*/
-			SAFE(motion[MOTION1].min_begin.last_up_origin=user_get_adc_height1());
-			SAFE(motion[MOTION2].min_begin.last_up_origin=user_get_adc_height2());
-			SAFE(motion[MOTION3].min_begin.last_up_origin=user_get_adc_height3());
-			/*执行全部上行*/
-				/*up_loop----bit1-->motion 1,bit2-->motion 2,bit3-->motion 3*/
-		 	for(air=MOTION1; air<MOTION_COUNT; air++)
-	    {
-					up_loop |= 1<<air;
-	    }
-			    up_loop|=1<<air;
-			while(up_loop)  //上行标志位；
-			{
-				for(air=MOTION1; air<MOTION_COUNT; air++)
-				{
-				    if((up_loop&(1<<air))!=0)//motion air bit checkl  0-->reset,1-->non reset;
-						{				
-							  HAL_Delay(50);
-							  switch(air)
-								{
-									case MOTION1:  if(user_get_adc_height1()>(motion[MOTION1].min_begin.last_up_origin+600))  //判断如果高度有变化，CLR位；
-																	{
-																		 up_loop&=~(1<<air);	
-																	}
-																	else
-																	{
-																		motion[MOTION1].min_begin.up_origin-=10;
-																	}
-																	break;
-									case MOTION2:if(user_get_adc_height2()>(motion[MOTION2].min_begin.last_up_origin+600))  //判断如果高度有变化，CLR位；
-																	{
-																		 up_loop&=~(1<<air);																		
-																	}
-																	else
-																	{
-																		motion[MOTION2].min_begin.up_origin-=10;
-																	}
-																	break;																		
-									case MOTION3:if(user_get_adc_height3()>(motion[MOTION3].min_begin.last_up_origin+600))  //判断如果高度有变化，CLR位；
-																	{
-																		 up_loop&=~(1<<air);																		
-																	}
-																	else
-																	{
-																		motion[MOTION3].min_begin.up_origin-=10;
-																	}
-																	break;
-										
-									default: break;
-										
-								}		
-						}							
-					if(user_get_adc_height1()>=4096-40*ENV_SPACE )
-						{
-							HAL_GPIO_WritePin(motion[0].io.up_port, motion[0].io.up_pin, GPIO_PIN_SET);
-							HAL_GPIO_WritePin(motion[0].io.down_port, motion[0].io.down_pin, GPIO_PIN_SET);							 
-						}  	
-          else if(user_get_adc_height2()>=4096-40*ENV_SPACE )		
-					{
-							HAL_GPIO_WritePin(motion[1].io.up_port, motion[1].io.up_pin, GPIO_PIN_SET);
-							HAL_GPIO_WritePin(motion[1].io.down_port, motion[1].io.down_pin, GPIO_PIN_SET);									
-					}		
-          else if (user_get_adc_height3()>=4096-40*ENV_SPACE )	
-					{
-							HAL_GPIO_WritePin(motion[2].io.up_port, motion[2].io.up_pin, GPIO_PIN_SET);
-							HAL_GPIO_WritePin(motion[2].io.down_port, motion[2].io.down_pin, GPIO_PIN_SET);									
-					}							
-				}
-			/*等待气缸全部去到最高点*/
-		if(((user_get_adc_height1()>=4096-40*ENV_SPACE )&&(user_get_adc_height2()>=4096-40*ENV_SPACE )&&(user_get_adc_height3()>=4096-40*ENV_SPACE )))
-			{
-				 up_loop&=~(1<<3);
-			}
-		}	
-				
-      HAL_Delay(500);			
-			/*保存当前状态下缸的下行的ADC值*/
-			SAFE(motion[MOTION1].min_begin.last_down_origin=user_get_adc_height1());
-			SAFE(motion[MOTION2].min_begin.last_down_origin=user_get_adc_height2());
-			SAFE(motion[MOTION3].min_begin.last_down_origin=user_get_adc_height3());		
-			/*执行全部下行*/
-		for(air=MOTION1; air<MOTION_COUNT; air++)
-	    {
-					down_loop |= 1<<air;
-	    }
-			    down_loop|=1<<air;
-			while(down_loop)  //下行标志位；
-			{
-				for(air=MOTION1; air<MOTION_COUNT; air++)
-				{
-				    if((down_loop&(1<<air))!=0)//motion air bit checkl  0-->reset,1-->non reset;
-						{				
-							  HAL_Delay(50);
-							  switch(air)
-								{
-									case MOTION1:  if(user_get_adc_height1()<=(motion[MOTION1].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
-																	{
-																		 down_loop&=~(1<<air);																		
-																	}
-																	else
-																	{
-																		motion[MOTION1].min_begin.down_origin-=30;   /*修改1号缸的初始化--速率*/
-																	}
-																	break;
-									case MOTION2:if(user_get_adc_height2()<=(motion[MOTION2].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
-																	{
-																		 down_loop&=~(1<<air);																		
-																	}
-																	else
-																	{
-																		motion[MOTION2].min_begin.down_origin-=20;
-																	}
-																	break;																		
-									case MOTION3:if(user_get_adc_height3()<=(motion[MOTION3].min_begin.last_down_origin-600))  //判断如果高度有变化，CLR位；
-																	{
-																		 down_loop&=~(1<<air);																		
-																	}
-																	else
-																	{
-																		motion[MOTION3].min_begin.down_origin-=20;
-																	}
-																	break;										
-									default: break;										
-								}		
-						}						
-					if(user_get_adc_height1()<=25*ENV_SPACE)
-						{
-							HAL_GPIO_WritePin(motion[0].io.up_port, motion[0].io.up_pin, GPIO_PIN_SET);
-							HAL_GPIO_WritePin(motion[0].io.down_port, motion[0].io.down_pin, GPIO_PIN_SET);							 
-						}  	
-          else if(user_get_adc_height2()<=25*ENV_SPACE)		
-					{
-							HAL_GPIO_WritePin(motion[1].io.up_port, motion[1].io.up_pin, GPIO_PIN_SET);
-							HAL_GPIO_WritePin(motion[1].io.down_port, motion[1].io.down_pin, GPIO_PIN_SET);									
-					}		
-          else if (user_get_adc_height3()<=25*ENV_SPACE )	
-					{
-							HAL_GPIO_WritePin(motion[2].io.up_port, motion[2].io.up_pin, GPIO_PIN_SET);
-							HAL_GPIO_WritePin(motion[2].io.down_port, motion[2].io.down_pin, GPIO_PIN_SET);									
-					}							
-				}
-			/*等待气缸全部去到最低点*/
-			if(((user_get_adc_height1()<=25*ENV_SPACE )&&(user_get_adc_height2()<=25*ENV_SPACE )&&(user_get_adc_height3()<=25*ENV_SPACE )))
-			{
-				  down_loop&=~(1<<3);
-			}				
-		}	
-		for(i=0;i<3;i++)	
-		{
-			motion[i].min_begin.up_origin+=24;
-			motion[i].min_begin.down_origin+=24;
-		}
-
-			mask_pid=0;
-}
-#endif
-
 void speed_scan(void)
 {
 	   if(key1())   intput_level|=0x01;   else  intput_level&=0x0e;
 	   if(key2())   intput_level|=0x02;   else  intput_level&=0x0d;
 	   if(key3())   intput_level|=0x04;   else  intput_level&=0x0b;
 	   if(key4())   intput_level|=0x08;   else  intput_level&=0x07;
+	   switch(intput_level)
+		 {
+				case 0: offset_data=30; break;
+				case 1: offset_data=25; break;
+				case 2: offset_data=20; break;
+				case 3: offset_data=15; break;
+				case 4: offset_data=10; break;
+				case 5: offset_data=5; break;
+				case 6: offset_data=0; break;
+				case 7: offset_data=-5; break; 
+				case 8: offset_data=-10; break;
+				case 9: offset_data=-15; break;
+				case 10: offset_data=-20; break;
+				case 11: offset_data=-25; break;
+				case 12: offset_data=-30; break;
+				case 13: offset_data=-35; break;
+				case 14: offset_data=-40; break;
+				case 15: offset_data=-45; break;
+			  default :break;
+		 }
 }	
 /* USER CODE END 0 */
 
@@ -587,6 +413,7 @@ int main(void)
 	uint8_t update_can;
 	/* flag of init; not init: 0; init: 1 */
 	uint8_t init_flag = 0;
+//	uint8_t i;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -622,9 +449,9 @@ int main(void)
 	user_motion_init();
 	user_time_init();
 	user_uart_init();
-	speed_scan();
 	user_can_init();
 	sw_timer_init(); 
+	speed_scan();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -642,19 +469,11 @@ int main(void)
 //	user_motion_init();
 //	user_time_init();
 //	user_uart_init();
-	#ifdef ENV_AIR
-	if(flag_begin==0)
-		{
-			find_air_origin();
-			flag_begin=1;
-		}
-		else
-		{
-			SAFE(motion[MOTION1].high.set = 0);
-			SAFE(motion[MOTION2].high.set = 0);
-			SAFE(motion[MOTION3].high.set = 0);		
-		}			
-  #endif		
+
+		SAFE(motion[MOTION1].high.set = 0* ENV_SPACE);
+		SAFE(motion[MOTION2].high.set = 0* ENV_SPACE);
+		SAFE(motion[MOTION3].high.set = 0* ENV_SPACE);		
+	
 //	__HAL_IWDG_START(&hiwdg);
 	  
 	init_flag = 1;
@@ -671,49 +490,37 @@ int main(void)
 		SAFE(free_ndown());
 		SAFE(free_nup());
 #endif
-		speed_scan();   //检测速度的值，确定PID的比例系数值小；
 		if (update_485||update_can)
 		{
 			SAFE(frame.enable = 0);
 			SAFE(clr_update_flag()); 
 			/* LED_START */
 			led_count++;
-			led_count = led_count%100;
+			led_count = led_count%10;
 			if(led_count == 0)
 			{
 				LED_TOGGLE();
 			}
 			/* LED_END */
 			/* DEBUG_INFO_START */
-			user_send_debug_info();
+//			user_send_debug_info();
 			/* DEBUG_INFO_END */
 			/* SEAT_START */
 			if (status.seat_enable)
 			{
-				///////////////////////////////////////////////////////////////////	
-				if(!can_or_485)
-				{
-					uint8_t msg_buff_l[8]={0};
-//					uint8_t a,b,c;
-					SAFE(get_high_speed_date(HIGHT_MSG_P,msg_buff_l));       
-		//			SAFE(get_high_speed_date(ENV_SP_P,&a));
-		//			SAFE(get_high_speed_date(SEAT_ID_P,&b));
-		//			SAFE(get_high_speed_date(SEAT_SP_P,&c));
-					
-					SAFE(frame.buff[4]=msg_buff_l[2]);
-					SAFE(frame.buff[3]=msg_buff_l[1]);
-					SAFE(frame.buff[2]=msg_buff_l[0]);
-					
-					SAFE(frame.buff[5]=msg_buff_l[4]);
-					SAFE(frame.buff[7]=msg_buff_l[5]);
-				}
-			////////////////////////////////////////////////////////////
 				/* update the set of height */
 				SAFE(motion[MOTION1].high.set = frame.buff[4] * ENV_SPACE);
 				SAFE(motion[MOTION2].high.set = frame.buff[3] * ENV_SPACE);
 				SAFE(motion[MOTION3].high.set = frame.buff[2] * ENV_SPACE);
 				/* update the special effects */
 				SAFE(status.spb = frame.buff[5]);
+			}
+			else
+			{
+				SAFE(motion[MOTION1].high.set = MOTION1_CONFIG_ORIGIN * ENV_SPACE);
+				SAFE(motion[MOTION2].high.set = MOTION2_CONFIG_ORIGIN * ENV_SPACE);
+				SAFE(motion[MOTION3].high.set = MOTION3_CONFIG_ORIGIN * ENV_SPACE);			
+        SAFE(status.spb = 0);				
 			}
 			/* update the seat number begin */
 			status.id = 0;
@@ -777,9 +584,9 @@ int main(void)
 			SAFE(motion[MOTION2].high.set = motion[MOTION2].config.origin * ENV_SPACE);
 			SAFE(motion[MOTION3].high.set = motion[MOTION3].config.origin * ENV_SPACE);
 #else
-			SAFE(motion[MOTION1].high.set = 0);
-			SAFE(motion[MOTION2].high.set = 0);
-			SAFE(motion[MOTION3].high.set = 0);
+			SAFE(motion[MOTION1].high.set = 0* ENV_SPACE);
+			SAFE(motion[MOTION2].high.set = 0* ENV_SPACE);
+			SAFE(motion[MOTION3].high.set = 0* ENV_SPACE);
 #endif
 		}
 		/* update the special effects into io */

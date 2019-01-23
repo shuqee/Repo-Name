@@ -130,11 +130,10 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan)
 {   
 	/*分析接收到的是什么数据*/
 	//set_can_rx_flag(hcan->pRxMsg->StdId);
-//	if (hcan->pRxMsg->StdId == HIGHT_MSG_ID)
-//	{
-//		can_rx_handle();
-//	}
-	can_rx_handle();
+	if (hcan->pRxMsg->StdId == HIGHT_MSG_ID)
+	{
+		can_rx_handle();
+	}
 	CAN1->IER|=(1<<1);
 	HAL_CAN_Receive_IT(hcan,CAN_FIFO0);
 }

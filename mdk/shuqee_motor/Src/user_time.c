@@ -142,43 +142,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	SAFE(motion[index].high.now += output_pul(index, (now < set)?GPIO_PIN_RESET:GPIO_PIN_SET));
 }
 #else
-void online_change_parm(enum motion_num index)
-{
-	uint8_t i;
-	for(i=0;i<3;i++)
-	{
-//		if(motion[index].speed .record_up_max<SPEED_STANDARD)
-//		{
-//			motion[index].speed .record_up_max=0;
-//			motion[index].min_begin.up_origin-=5;    //增加速度；
-//		}
-		if(motion[index].speed .up_count <= 5)
-		{
-			if(motion[index].speed .record_up_max>SPEED_STANDARD)
-			{
-				motion[index].speed .record_up_max=0;
-				motion[index].min_begin.up_origin+=6;    //降低速度；
-				motion[index].speed .up_count ++;
-			}
-		}
-		
-//		if(motion[index].speed .record_down_max<SPEED_STANDARD)
-//		{
-//			motion[index].speed .record_down_max=0;
-//			motion[index].min_begin.down_origin-=5;
-//		}
-		if(motion[index].speed .down_count <= 5)
-		{
-			if(motion[index].speed .record_down_max>SPEED_STANDARD)
-			{
-				motion[index].speed .record_down_max=0;
-				motion[index].min_begin.down_origin+=6;
-				motion[index].speed .down_count ++;
-			}
-		}
-	}
-}
-
 void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 {
 	/* current direction of motion */
@@ -191,19 +154,17 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 
 	pid_out = motion[index].pid.out;
 
-//	online_change_parm(index);
-	
-	if (pid_out > 0)
+	if (motion[index].pid.dir == GPIO_PIN_SET)
 	{
 		sign = GPIO_PIN_SET;
 	}
-	else if (pid_out < 0)
+	else if (motion[index].pid.dir  == GPIO_PIN_RESET)
 	{
 		sign = GPIO_PIN_RESET;
-		pid_out = -pid_out;
 	}
 	else
 	{
+		sign = GPIO_PIN_STOP;
 		HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);
 		__HAL_TIM_SET_AUTORELOAD(htim, 999);
@@ -228,7 +189,7 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);  //上行
 			}
-			else
+			else if(GPIO_PIN_RESET == out_dir)
 			{
 				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
 				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);//下行
@@ -242,70 +203,24 @@ void output_pwm(TIM_HandleTypeDef *htim, enum motion_num index)
 			/* output pwm done */
 			status[index] = 0;
 			/* step of motion is decrease or increase */
-//			interval = (uint32_t)(99.0/pid_out-99.0);
-//		 interval = (uint32_t)(600.0-pid_out);
-			if (GPIO_PIN_SET == out_dir)
-			{       
-				interval = (uint32_t)(motion[index].min_begin.up_origin+100.0-pid_out);       //上开度
-				  /*限制阀的最大速度*/
-				interval = (interval<(motion[index].min_begin.up_origin-200))?(motion[index].min_begin.up_origin-200):interval; 
-			}
-			else
-			{
-         interval = (uint32_t)(motion[index].min_begin.down_origin+100.0-pid_out);   //下开度
-				  /*限制阀的最大速度*/
-				interval = (interval<(motion[index].min_begin.down_origin-200))?(motion[index].min_begin.down_origin-200):interval; 				
-			}
+			interval = (uint32_t)pid_out+offset_data; 
 		 	break;
 		default:
 			status[index] = 0;
 			break;
 	}
-	interval = (interval>0xffff)?0xffff:interval;
+	interval = (interval>0xffff)?ENV_SPEED_MAX:interval;
 	interval = (interval<ENV_SPEED_MAX)?ENV_SPEED_MAX:interval;
 	__HAL_TIM_SET_AUTORELOAD(htim, interval);
 }
 
-void orign_pwm(TIM_HandleTypeDef *htim,enum motion_num index)
-{	
-   if(motion[index].high.test_bit==0)
-	{	
-			if(up_loop)//上行
-			{
-				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);  //上行	
-				__HAL_TIM_SET_AUTORELOAD(htim, 99);
-			}
-			if(down_loop)//下行	
-			{
-				HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_RESET);//下行	
-				__HAL_TIM_SET_AUTORELOAD(htim, 99);
-			}
-			motion[index].high.test_bit=motion[index].high.test_bit+1;
-  }
-	else	if(motion[index].high.test_bit)
-		{
-			HAL_GPIO_WritePin(motion[index].io.up_port, motion[index].io.up_pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(motion[index].io.down_port, motion[index].io.down_pin, GPIO_PIN_SET);		
-			motion[index].high.test_bit=0;
-				if(up_loop)//上行
-				{
-					__HAL_TIM_SET_AUTORELOAD(htim, motion[index].min_begin.up_origin);
-				}
-				if(down_loop)//下行	
-				{
-					__HAL_TIM_SET_AUTORELOAD(htim, motion[index].min_begin.down_origin);	
-				}
-		}	
-}
 /**
   * @brief     Callback function of timer.
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	enum motion_num index;
-	
+
 	if (htim->Instance == TIM1)
 	{
 		index = MOTION1;
@@ -322,9 +237,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		return;
 	}
-	if(!mask_pid)  
 	output_pwm(htim, index);
-	else
-	orign_pwm(htim,index);
 }
 #endif

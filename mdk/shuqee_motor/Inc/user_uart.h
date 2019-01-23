@@ -14,7 +14,6 @@ struct frame
 };
 
 extern struct frame frame;
-extern uint8_t can_or_485;
 extern void user_uart_init(void);
 extern void user_send_debug_info(void);
 

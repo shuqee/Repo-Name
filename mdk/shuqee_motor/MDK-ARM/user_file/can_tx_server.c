@@ -222,55 +222,17 @@ void can_rx_init(void)
 }	
 static uint8_t update_flag;
 uint8_t can_hb_buff[8]={0,0x01,0x55};
-
-//static uint16_t record_cnt;
+uint8_t msg_buff_l[8]={0};
 void can_rx_handle(void)
 {
-	uint8_t index;
-//	can_rx_msg_t index;
-//	for(index = HIGHT_MSG;index < CAN_RX_MAX_NUM;index++)
-//	{
-//		if(can_rx_table[index].flag==1)
-//		{
-			/*返回心跳信号*/
-			/*can_hb_buff[0]代表座椅地址  can_hb_buff[1]代表心跳信号  can_hb_buff[2]代表验证码*/	
-//			if(can_rx_table[HEART_MSG].flag==1)
-//			{
-//				can_send(HEART_BEAT_ID+status.id,can_hb_buff, 8);
-//			}	
-//			if(index==3) 
-//			{
-				SAFE(update_flag=1);
-				memcpy(can_rx_buff[0].data,hcan.pRxMsg->Data,8);
-//				record_cnt	++;
-//	      if(record_cnt>=50)
-//				{
-//					record_cnt=0;
-					for(index=0;index<3;index++)
-					{
-						//求出当前最新的设定速度值；
-						motion[2-index].speed.set=((((can_rx_buff[0].data[index])*ENV_SPACE)-((can_rx_buff[1].data[index])*ENV_SPACE))*1000)/10;    //4906/500ms;
-						if(motion[index].speed.set<0)
-						motion[2-index].speed.set=-((((can_rx_buff[0].data[index])*ENV_SPACE)-((can_rx_buff[1].data[index])*ENV_SPACE))*1000)/10;    //4906/500ms;
-						can_rx_buff[1].data[index]=can_rx_buff[0].data[index];
-					}
-//				}
-			  SAFE(can_or_485=0); 
-////			}	
-//			can_rx_table[index].can_rx();
-//			can_rx_table[index].flag=0;
-//			can_rx_table[index].count=0;
-//			memcpy(can_rx_buff[index].data,hcan.pRxMsg->Data,8);
-//		}	
-//		if(can_rx_table[index].flag!=1)
-//		{
-//			can_rx_table[index].count++;
-//		}	
-//		if(can_rx_table[index].count>=can_rx_table[index].timeout)
-//		{
-//			can_rx_table[index].timeout_process();
-//		}		
-//	}
+		memcpy(msg_buff_l,hcan.pRxMsg->Data,8);  
+		SAFE(frame.buff[4]=msg_buff_l[2]);
+		SAFE(frame.buff[3]=msg_buff_l[1]);
+		SAFE(frame.buff[2]=msg_buff_l[0]);
+		
+		SAFE(frame.buff[5]=msg_buff_l[4]);
+		SAFE(frame.buff[7]=msg_buff_l[5]);
+		SAFE(update_flag=1);
 }
 
 /*获取CAN数据的更新位*/

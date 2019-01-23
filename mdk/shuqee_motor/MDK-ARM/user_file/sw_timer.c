@@ -14,7 +14,6 @@ typedef struct
 	uint32_t offset; /* task start delay */
 } task_timer_t;
 
-
 /**********************用TASK_TABLE宏来表示时间事件的个数******************************/
 
 task_timer_t task_timer_table[] = 
